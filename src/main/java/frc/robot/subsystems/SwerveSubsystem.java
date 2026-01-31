@@ -2,7 +2,7 @@ package frc.robot.subsystems;
 
 import frc.lib.swerve.SwerveModule;
 import frc.robot.Constants.*;
-
+import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
@@ -32,8 +32,8 @@ public class SwerveSubsystem extends SubsystemBase {
     private SwerveModule[] m_swerveMods;
     private SwerveModuleState[] m_states = new SwerveModuleState[4];
     private Pigeon2 m_gyro;
-    private Rotation2d m_gyroYaw2d;
-    private Rotation2d m_zeroYaw2D = new Rotation2d();      // default is 0 degrees.
+    private Rotation2d m_currentHeading2d;
+    private Rotation2d m_zeroDeg2D = new Rotation2d();      // default is 0 degrees.
 
     private Translation2d m_cenOfRotationOffset = SDC.REL_POS2D_CEN;
     private boolean m_isFieldOriented = true;       // default is Field Oriented on start
@@ -50,7 +50,6 @@ public class SwerveSubsystem extends SubsystemBase {
                                                     // damage, independent of
                                                     // m_varMaxOutputFactor.
     private GenericEntry        m_gyroYawEntry;
-    private GenericEntry        m_gyroRawYawEntry;
     private GenericEntry        m_isFieldOrientedEntry;
     // private GenericEntry        m_gyroPitchEntry;
     // private GenericEntry        m_gyroRollEntry;
@@ -117,15 +116,11 @@ public class SwerveSubsystem extends SubsystemBase {
     public void drive(Translation2d translation, 
                       double rotation, 
                       boolean isOpenLoop) {
-        System.out.printf("Swerve Drive called");
         translation = translation.times(m_varMaxOutputFactor * m_fixedMaxTranslationOutput);
         rotation = rotation * m_varMaxOutputFactor * m_fixedMaxRotationOutput;
-        if (m_isFieldOriented) {
-            //if  (System.currentTimeMillis() % 2000.0 < 200.0) 
-            System.out.println(" Is Field Oriented");
-        } else {
-            System.out.println("");
-        }
+
+
+
         ChassisSpeeds chassisSpeeds = m_isFieldOriented 
                                         ?
                                             ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -223,21 +218,15 @@ public class SwerveSubsystem extends SubsystemBase {
         m_gyro.setYaw(newHeadingDeg);
     }
 
-    //
     public Rotation2d getYaw2d() {
-        /*
-        // Under Phoenix6, using getYaw works, but getAngle() (with +CW, -CCW convention, so 
-        // INVERT_GYRO wouuld need to be set true) or getRotation2d() (which uses the standard
-        // WPILib convention of +CCW, -CW, so INVERT_GYRO can remain false) are both available with 
-        // automatic refresh. 
-        // Returning m_yaw.plus(m_zeroYaw2d) just ensures the returned value lies in the 
-        // range -PI to +PI.
-        return (GC.INVERT_GYRO) ? Rotation2d.fromDegrees(360 - m_gyro.getYaw().getValueAsDouble())
-                                  : Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble());
-        */
-        m_gyroYaw2d = m_gyro.getRotation2d();
-        return m_gyroYaw2d.plus(m_zeroYaw2D);
+        Rotation2d gyroYaw2d = m_gyro.getRotation2d();
+        // SRF standardized on the Pigeon, so no need to worry about inverting the
+        // gyro output.
+        // m_gyroYaw2d.plus(m_zeroYaw2D) just ensures that the result is between 0 and 360,
+        // .plus() calls .rotateby() (the provided argument in this case is just 0 deg).
+        return gyroYaw2d.plus(m_zeroDeg2D);
     }
+
 /*
     public Rotation2d getPitch() {
         return Rotation2d.fromDegrees(m_gyro.getPitch().getValueAsDouble());
@@ -266,7 +255,6 @@ public class SwerveSubsystem extends SubsystemBase {
                 SmartDashboard.putString("RobotData Layout", "getLayout() Error occured");
             } else {
                 m_gyroYawEntry =        sl.add("Gyro Yaw", "0").getEntry();
-                m_gyroRawYawEntry =     sl.add("Gyro Raw Yaw", "0").getEntry();
                 m_isFieldOrientedEntry= sl.add("Field Oriented ", "Yes").getEntry();
                 m_location = m_swerveOdometry.getPoseMeters();
                 m_odometryPoseXEntry =  sl.add("Pose X", F.df2.format(m_location.getX())).getEntry();
@@ -291,29 +279,32 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void publishSwerveDriveData() {
-            m_gyroYawEntry.setString(F.df1.format(getYaw2d().getDegrees()));
-            // m_gyroRawYawEntry.setString(F.df1.format(m_gyro.getYaw().getValueAsDouble()));
-            m_gyroRawYawEntry.setString(F.df1.format(m_gyro.getRotation2d().getDegrees()));
-            m_odometryPoseXEntry.setString(F.df2.format(m_location.getX()));
-            m_odometryPoseYEntry.setString(F.df2.format(m_location.getY()));           
-            m_odometryHeadingEntry.setString(F.df2.format(m_location.getRotation().getRadians()));
-            m_isFieldOrientedEntry.setString(m_isFieldOriented ? "Yes" : "No");
-
-        // m_gyroPitchEntry
-        // m_gyroRollEntry
-
+        // class variable m_currentHeading2d is refreshed in periodic().
+        // doing this should avoid making CAN bus data requests too frequently for
+        // the Pigeon2 to keep up.
+        m_gyroYawEntry.setString(F.df1.format(m_currentHeading2d.getDegrees()));
+        m_odometryPoseXEntry.setString(F.df2.format(m_location.getX()));
+        m_odometryPoseYEntry.setString(F.df2.format(m_location.getY()));           
+        m_odometryHeadingEntry.setString(F.df2.format(m_location.getRotation().getRadians()));
+        m_isFieldOrientedEntry.setString(m_isFieldOriented ? "Yes" : "No");
         for(SwerveModule mod : m_swerveMods) {
             mod.publishModuleData();
         }
     }
 
+    /*
+        periodic is called on every loop instance. 
+    */
     @Override
     public void periodic() {
-        // Update odometry on every loop instance
-        m_swerveOdometry.update(getYaw2d(), getModulePositions()); 
-        m_location = m_swerveOdometry.getPoseMeters();
+        m_currentHeading2d = getYaw2d();
+        if (RobotState.isEnabled()) {
+            m_swerveOdometry.update(m_currentHeading2d, getModulePositions()); 
+            m_location = m_swerveOdometry.getPoseMeters();
+        }
         publishSwerveDriveData();
     }
+
     // This is a test routine, designed to rotate all modules
     // synchronously to an identical specified heading in degrees
     public void rotateModulesToAngle(double angleDeg) {
@@ -338,6 +329,7 @@ public class SwerveSubsystem extends SubsystemBase {
             mod.stop();
         }            
     }
+
     public double getCurrentPose() {
         return m_swerveOdometry.getPoseMeters().getY();
     }

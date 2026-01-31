@@ -28,7 +28,8 @@ public final class Constants {
     /***************************************************
      * Universal Constants
      ***************************************************/
-    public static final String CAN_BUS_FOR_SWERVE = "CANivore0";
+    // public static final String CAN_BUS_FOR_SWERVE = "CANivore0";
+    public static final String CAN_BUS_FOR_SWERVE = "rio";
     public static final String CAN_BUS_FOR_TURRET = "rio";
     public static final String CAN_BUS_FOR_EVERYTHING_ELSE = "CANivore1";
 
@@ -300,11 +301,18 @@ public final class Constants {
             Translation2d relPos2D_FR = R_FR;
             Translation2d relPos2D_BL = R_BL;
             Translation2d relPos2D_BR = R_BR;
-            // TODO: measure and enter REBUILT absolute wheel angle offsets, in degrees, here
-            Rotation2d absOffsetFL = Rotation2d.fromDegrees(73.7);
-            Rotation2d absOffsetFR = Rotation2d.fromDegrees(219.1);
-            Rotation2d absOffsetBL = Rotation2d.fromDegrees(342.5);
-            Rotation2d absOffsetBR = Rotation2d.fromDegrees(18.6);
+            // TODO: with the wheels all facing forward, measure and enter REBUILT 
+            // absolute wheel angle offsets, in degrees, here
+            // Caution! The published CCDeg values per swerve module on the Dashboard
+            // are now corrected internally to each CANCoder, for the specified 
+            // magnetic offsets entered here. So you must first set all offsets
+            // to 0 here, then compile and deploy before reading the CCDeg values.
+            // once calibrated wheel offset values are obtained, they
+            // must be entered here before a final compile / deploy. 
+            Rotation2d absOffsetFL = Rotation2d.fromDegrees(-0.86450195 * 360.0);
+            Rotation2d absOffsetFR = Rotation2d.fromDegrees(-0.95922851 * 360.0);
+            Rotation2d absOffsetBL = Rotation2d.fromDegrees(-0.80126953 * 360.0);
+            Rotation2d absOffsetBR = Rotation2d.fromDegrees(-0.20825195 * 360.0);
             double parkAngleLeftDeg = R_PARK_ANGLE_LEFT_DEG;
             double parkAngleRightDeg = R_PARK_ANGLE_RIGHT_DEG;
             double steerGearRatio = ((150.0 / 7.0) / 1.0);
@@ -314,7 +322,7 @@ public final class Constants {
             double steerKI = 0.0;
             double steerKD = 0.0;
             double steerKF = 0.0;
-            InvertedValue driveMotorInvert = InvertedValue.Clockwise_Positive;   // Rebuilt is inverted from Black Knight
+            InvertedValue driveMotorInvert = InvertedValue.CounterClockwise_Positive;   // Rebuilt is inverted from Black Knight
             InvertedValue steerMotorInvert = InvertedValue.Clockwise_Positive;
             SensorDirectionValue canCoderDir = SensorDirectionValue.CounterClockwise_Positive;
             

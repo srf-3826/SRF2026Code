@@ -52,7 +52,8 @@ import com.revrobotics.spark.config.ClosedLoopConfig;
 public class SwerveModule {
     public  int m_modNum;
     private SwerveModuleConstants m_moduleConstants;
-    private Rotation2d m_absAngleOffset2d;
+    private double m_absAngleOffsetRot;
+    
     private double desiredAngle;      // Just a local variable, persistent to relieve Java GC pressure
     private double m_lastAngle;       // This is not used for control, rather it 
                                       // stores the last setpoint requested for a
@@ -61,6 +62,7 @@ public class SwerveModule {
     // private final RelativeEncoder m_integratedSteerEncoder;
     // private final SparkClosedLoopController m_steerController;
     private final CANcoder m_absWheelAngleCANcoder;
+
     private final TalonFX m_driveMotor;
 /* 
     private SparkBaseConfig m_sparkBaseConfig;
@@ -89,13 +91,13 @@ public class SwerveModule {
     // Entries for publishing module data.
     // Technically, the following member Entry variables do not need to be saved,
     // as the data written via them is static and should never change after
-    // initial setup
+    // initial setup, i.e. they only need to be published once.
     // private GenericEntry IdsEntry;       // Drive ID, Rotate ID, CANcoder ID, in that order
                                             // Single digits only, to fit module list width
     // private GenericEntry absOffsetEntry;
 
     // However, the following Entry keys are for dynamic variables, and
-    // will change depending on activity.
+    // will change depending on activity, so need publishing every loop.
     private GenericEntry steerSetpointDegEntry;
     private GenericEntry steerEncoderDegEntry;
     private GenericEntry absCANcoderDegEntry;
@@ -111,7 +113,7 @@ public class SwerveModule {
 
         m_modNum = moduleNumber;
         m_moduleConstants = moduleConstants;
-        m_absAngleOffset2d = moduleConstants.ABS_ANG_OFFSET2D;
+        m_absAngleOffsetRot = moduleConstants.ABS_ANG_OFFSET2D.getDegrees() / 360.0;
 
         /* Angle Motor Config */
         m_steerMotor = new TalonFX(m_moduleConstants.STEER_MOTOR_ID, swerveCanbus);
@@ -123,7 +125,6 @@ public class SwerveModule {
 
         /* Angle Encoder Config */
         m_absWheelAngleCANcoder = new CANcoder(m_moduleConstants.ENCODER_ID, swerveCanbus);
-        configAbsWheelAngleCANcoder();
 
         m_lastAngle = getState().angle.getDegrees();
 
@@ -231,9 +232,7 @@ public class SwerveModule {
 
     public double getCANcoderDeg() {
         // .getAbsolutePosition returns a StatusSignal, so we need to get it's value 
-        // as a double and convert its range (apparently [-1, .999755859] rotations,
-        // according to the Phoenix Library source, although [0, 1] rotations seems 
-        // more appropriate) into degrees
+        // as a double and convert its range ([0, 1] rotations) into degrees
         return m_absWheelAngleCANcoder.getAbsolutePosition().getValueAsDouble() * 360.0;
     }
 
@@ -262,6 +261,21 @@ public class SwerveModule {
         posStatus.waitForUpdate(200);   // Then wait up to 200 ms for one more refresh before returning
     }
 
+    // NOTE: Module steering motor built in encoders are used to track
+    // and control wheel angles via thir built in PID functions.
+    // At startup the wheels could be in any random orientation,
+    // so absolute encoders are used to "seed" each steering motor encoder.
+    // The absolute encoders (CANCoders) are initialized prior to this
+    // method being called, and should have their MagetOffsets set to correct
+    // each to return correct angles, i.e. they are
+    // calibrated with their respective wheel absolute offset.
+    // NOTE: recallibration requires a power cycle reset after any
+    // MagnetOffset value is written, whether 0 (before measuring an offset)
+    // or a measured offset value. Offsets should always be the negated reading
+    // obtained with wheels straight ahead, wuth an existing offset of zero. 
+    // Setting the motor encoder to match the absolute angle read by the 
+    // CANCoder could be done at anytime, with the wheels at any angle, but 
+    // it should only need to be done once at startup, barring any power glitches.
     public void resetToAbsolute(){
         waitForCANcoder();
         double CANcoderOnReset = getCANcoderDeg();
@@ -270,12 +284,14 @@ public class SwerveModule {
         setFalconPosDeg(CANcoderOnReset);
     }
 
-    private void configAbsWheelAngleCANcoder(){ 
+    private void configAbsWheelAngleCANcoder() { 
         var magnetSensorConfigs = new MagnetSensorConfigs().withAbsoluteSensorDiscontinuityPoint(SDC.CANCODER_RANGE)
-                                                           .withSensorDirection(SDC.CANCODER_DIR)
-                                                           .withMagnetOffset(m_absAngleOffset2d.getRotations());
+                                                             .withSensorDirection(SDC.CANCODER_DIR)
+                                                             .withMagnetOffset(m_absAngleOffsetRot);
         var ccConfig = new CANcoderConfiguration().withMagnetSensor(magnetSensorConfigs);
         m_absWheelAngleCANcoder.getConfigurator().apply(ccConfig);
+        // NOTE: the MagnetOffset part of this config does NOT take effect until the next reboot.
+        // But as long as we are writing the correct calibrated offset each time, it won't matter.
     }
 
 /*
@@ -300,7 +316,7 @@ public class SwerveModule {
         }
     }
 */
-    private void configSteerMotor(){
+    private void configSteerMotor() {
         var openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
                                                        .withVoltageOpenLoopRampPeriod(SDC.OPEN_LOOP_RAMP_PERIOD);
                                                        //.withTorqueOpenLoopRampPeriod(0);
@@ -337,10 +353,10 @@ public class SwerveModule {
         }
     }
 
-    private void configDriveMotor(){
+    private void configDriveMotor() {
         var openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
                                                        .withVoltageOpenLoopRampPeriod(SDC.OPEN_LOOP_RAMP_PERIOD);
-                                                       //.withTorqueOpenLoopRampPeriod(0);
+                                                        //.withTorqueOpenLoopRampPeriod(0);
         var closedLoopConfig = new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0)
                                                            .withVoltageClosedLoopRampPeriod(SDC.CLOSED_LOOP_RAMP_PERIOD)
                                                            .withTorqueClosedLoopRampPeriod(0);
@@ -376,14 +392,14 @@ public class SwerveModule {
         }
     }
 
-    public SwerveModuleState getState(){
+    public SwerveModuleState getState() {
         return new SwerveModuleState(
             getVelocityMPS(),
             getAngle2d()
         ); 
     }
 
-    public double getPositionM(){
+    public double getPositionM() {
         return m_driveMotor.getPosition().getValueAsDouble() * SDC.TALONFX_ROT_TO_M_FACTOR; 
     }
 
@@ -391,11 +407,8 @@ public class SwerveModule {
         return m_driveMotor.getVelocity().getValueAsDouble() * SDC.TALONFX_RPS_TO_MPS_FACTOR;
     }
 
-    public SwerveModulePosition getModulePosition(){
-        return new SwerveModulePosition(
-            getPositionM(), 
-            getAngle2d()
-        );
+    public SwerveModulePosition getModulePosition() {
+        return new SwerveModulePosition(getPositionM(), getAngle2d());
     }
 
     public void setupModulePublishing() {
