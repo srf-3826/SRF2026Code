@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.TurretSubsystem;
@@ -45,13 +46,14 @@ public class TrackingSubsystem extends SubsystemBase {
     public Vector3D cameraToWorld(Vector3D point)
     {
         point = cameraToRobot(point);
-        // TODO: Apply odometry offset
-        // or, take an indexed location?
-        // I would prefer to use odometry, but i need to test more.
+        // TODO: Verify this is correct
+        Pose2d position = m_drivetrain.getPose();
+        point.x += position.getX();
+        point.y += position.getY();
         return point;
     }
     public void calibrateOdometry()
     { // TODO: Take known location of tag and location given by camera to robot, then offset odometry to correct for it.
-
+        
     }
 }

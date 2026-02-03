@@ -44,7 +44,7 @@ public class Geometry {
     {
         /*
          * +x is forward
-         * +y is rightward
+         * +y is leftward
          * +z is upward
          */
         Vector3D position = new Vector3D(0, 0, 0);
