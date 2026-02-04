@@ -14,10 +14,12 @@ import edu.wpi.first.math.geometry.Pose2d;
 import java.util.Map;
 
 import com.ctre.phoenix6.CANBus;
-import com.ctre.phoenix6.configs.Pigeon2Configuration;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.Pigeon2;
+import com.ctre.phoenix6.configs.Pigeon2Configuration;
 
 import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -31,7 +33,9 @@ public class SwerveSubsystem extends SubsystemBase {
     private SwerveDriveOdometry m_swerveOdometry;
     private SwerveModule[] m_swerveMods;
     private SwerveModuleState[] m_states = new SwerveModuleState[4];
+
     private Pigeon2 m_gyro;
+    private final StatusSignal<Angle> m_yawSignal;
     private Rotation2d m_currentHeading2d;
     private Rotation2d m_zeroDeg2D = new Rotation2d();      // default is 0 degrees.
 
@@ -56,12 +60,17 @@ public class SwerveSubsystem extends SubsystemBase {
     public GenericEntry        m_odometryPoseXEntry;
     public GenericEntry        m_odometryPoseYEntry;
     private GenericEntry        m_odometryHeadingEntry;
+
+    private double m_lastPublishTime = 0;
     
     public SwerveSubsystem(CANBus swerveCanbus) {
         m_gyro = new Pigeon2(GC.PIGEON_2_CANID, swerveCanbus);
         Pigeon2Configuration p2Config = new Pigeon2Configuration();
         m_gyro.getConfigurator().apply(p2Config);
         zeroGyro();
+        m_yawSignal = m_gyro.getYaw();
+        m_gyro.optimizeBusUtilization();
+
         SmartDashboard.putNumber("Chosen Module Circumference M =", SDC.WHEEL_CIRCUMFERENCE_M);
 
         m_swerveMods = new SwerveModule[] {
@@ -118,8 +127,6 @@ public class SwerveSubsystem extends SubsystemBase {
                       boolean isOpenLoop) {
         translation = translation.times(m_varMaxOutputFactor * m_fixedMaxTranslationOutput);
         rotation = rotation * m_varMaxOutputFactor * m_fixedMaxRotationOutput;
-
-
 
         ChassisSpeeds chassisSpeeds = m_isFieldOriented 
                                         ?
@@ -219,12 +226,11 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public Rotation2d getYaw2d() {
-        Rotation2d gyroYaw2d = m_gyro.getRotation2d();
-        // SRF standardized on the Pigeon, so no need to worry about inverting the
-        // gyro output.
-        // m_gyroYaw2d.plus(m_zeroYaw2D) just ensures that the result is between 0 and 360,
-        // .plus() calls .rotateby() (the provided argument in this case is just 0 deg).
-        return gyroYaw2d.plus(m_zeroDeg2D);
+        // BaseStatusSignal.refreshAll(m_yawSignal); // optional but recommended 
+        // SRF has standardized on the Pigeon, so no need to invert the gyro output.
+        // yaw2d.plus(m_zeroYaw2D) just ensures that the result is between 0 and 360.
+        // .plus(arg) calls .rotateby(arg), and arg here is just 0.0 deg.
+        return (Rotation2d.fromDegrees(m_yawSignal.getValueAsDouble()*360)).plus(m_zeroDeg2D);
     }
 
 /*
@@ -279,6 +285,12 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void publishSwerveDriveData() {
+        double now = Timer.getFPGATimestamp();
+        if (now - m_lastPublishTime < 0.1) return;  // 10 Hz
+    
+        // If this code is reached, it is itme to publish
+        m_lastPublishTime = now;
+
         // class variable m_currentHeading2d is refreshed in periodic().
         // doing this should avoid making CAN bus data requests too frequently for
         // the Pigeon2 to keep up.

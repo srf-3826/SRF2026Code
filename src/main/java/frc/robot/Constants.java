@@ -29,7 +29,7 @@ public final class Constants {
      * Universal Constants
      ***************************************************/
     // public static final String CAN_BUS_FOR_SWERVE = "CANivore0";
-    public static final String CAN_BUS_FOR_SWERVE = "rio";
+    public static final String CAN_BUS_FOR_SWERVE = "CANivore0";
     public static final String CAN_BUS_FOR_TURRET = "rio";
     public static final String CAN_BUS_FOR_EVERYTHING_ELSE = "CANivore1";
 
@@ -506,11 +506,13 @@ public final class Constants {
             public static final int canCoderID   = 1;
             public static final Rotation2d angleOffset = ABS_OFFSET_FL;
             public static final ShuffleboardLayout sBE_Layout0 = 
-                                    sbt.getLayout("FL_Mod0", BuiltInLayouts.kList)
-                                       .withPosition(FIRST_SWERVE_MOD_LIST_COL + 0,
+                                    sbt.getLayout("FL_Mod0", BuiltInLayouts.kGrid)
+                                       .withPosition(FIRST_SWERVE_MOD_LIST_COL + 0, 
                                                      FIRST_SWERVE_MOD_LIST_ROW)
                                        .withSize(1, SWERVE_MOD_LIST_HGT)
-                                       .withProperties(Map.of("Label position", "LEFT"));
+                                       .withProperties(Map.of(  "Number of columns", 1, 
+                                                                "Number of rows", 12, 
+                                                                "Label position", "LEFT" ));
             public static final SwerveModuleConstants MODULE_CONSTANTS = 
                                         new SwerveModuleConstants(driveMotorID, 
                                                                   steerMotorID, 
@@ -525,12 +527,14 @@ public final class Constants {
             public static final int steerMotorID = 4;
             public static final int canCoderID   = 2;
             public static final Rotation2d angleOffset = ABS_OFFSET_FR;                             
-            public static final ShuffleboardLayout sBE_Layout1 = 
-                                     sbt.getLayout("FR_Mod1", BuiltInLayouts.kList)
-                                        .withPosition(FIRST_SWERVE_MOD_LIST_COL + 1,
-                                                    FIRST_SWERVE_MOD_LIST_ROW)
-                                        .withSize(1, SWERVE_MOD_LIST_HGT)
-                                        .withProperties(Map.of("Label position", "LEFT"));
+                public static final ShuffleboardLayout sBE_Layout1 = 
+                                    sbt.getLayout("FL_Mod1", BuiltInLayouts.kGrid)
+                                       .withPosition(FIRST_SWERVE_MOD_LIST_COL + 1, 
+                                                     FIRST_SWERVE_MOD_LIST_ROW)
+                                       .withSize(1, SWERVE_MOD_LIST_HGT)
+                                       .withProperties(Map.of(  "Number of columns", 1, 
+                                                                "Number of rows", 12, 
+                                                                "Label position", "LEFT" ));
             public static final SwerveModuleConstants MODULE_CONSTANTS = 
                                         new SwerveModuleConstants(driveMotorID, 
                                                                   steerMotorID, 
@@ -545,12 +549,14 @@ public final class Constants {
             public static final int steerMotorID = 6;
             public static final int canCoderID   = 3;
             public static final Rotation2d angleOffset = ABS_OFFSET_BL;
-            public static final ShuffleboardLayout sBE_Layout2 = 
-                                    sbt.getLayout("BL_Mod2", BuiltInLayouts.kList)
-                                       .withPosition(FIRST_SWERVE_MOD_LIST_COL + 2,
+    public static final ShuffleboardLayout sBE_Layout2 = 
+                                    sbt.getLayout("FL_Mod2", BuiltInLayouts.kGrid)
+                                       .withPosition(FIRST_SWERVE_MOD_LIST_COL + 2, 
                                                      FIRST_SWERVE_MOD_LIST_ROW)
                                        .withSize(1, SWERVE_MOD_LIST_HGT)
-                                       .withProperties(Map.of("Label position", "LEFT"));
+                                       .withProperties(Map.of(  "Number of columns", 1, 
+                                                                "Number of rows", 12, 
+                                                                "Label position", "LEFT" ));
             public static final SwerveModuleConstants MODULE_CONSTANTS = 
                                         new SwerveModuleConstants(driveMotorID, 
                                                                   steerMotorID, 
@@ -566,11 +572,13 @@ public final class Constants {
             public static final int canCoderID   = 4;
             public static final Rotation2d angleOffset = ABS_OFFSET_BR;
             public static final ShuffleboardLayout sBE_Layout3 = 
-                                    sbt.getLayout("BR_Mod3", BuiltInLayouts.kList)
-                                       .withPosition(FIRST_SWERVE_MOD_LIST_COL + 3,
+                                    sbt.getLayout("FL_Mod3", BuiltInLayouts.kGrid)
+                                       .withPosition(FIRST_SWERVE_MOD_LIST_COL + 3, 
                                                      FIRST_SWERVE_MOD_LIST_ROW)
                                        .withSize(1, SWERVE_MOD_LIST_HGT)
-                                       .withProperties(Map.of("Label position", "LEFT"));
+                                       .withProperties(Map.of(  "Number of columns", 1, 
+                                                                "Number of rows", 12, 
+                                                                "Label position", "LEFT" ));
             public static final SwerveModuleConstants MODULE_CONSTANTS = 
                                         new SwerveModuleConstants(driveMotorID, 
                                                                   steerMotorID, 
