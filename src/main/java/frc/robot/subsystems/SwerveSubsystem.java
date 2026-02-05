@@ -10,6 +10,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import java.util.Map;
 
@@ -37,7 +38,6 @@ public class SwerveSubsystem extends SubsystemBase {
     private Pigeon2 m_gyro;
     private final StatusSignal<Angle> m_yawSignal;
     private Rotation2d m_currentHeading2d;
-    private Rotation2d m_zeroDeg2D = new Rotation2d();      // default is 0 degrees.
 
     private Translation2d m_cenOfRotationOffset = SDC.REL_POS2D_CEN;
     private boolean m_isFieldOriented = true;       // default is Field Oriented on start
@@ -90,7 +90,7 @@ public class SwerveSubsystem extends SubsystemBase {
         resetModulesToAbsolute();
 
         m_swerveOdometry = new SwerveDriveOdometry(SDC.SWERVE_KINEMATICS, 
-                                                   getYaw2d(), 
+                                                   getYaw2d(),              // Only called once here, no optimization needed
                                                    getModulePositions());
         setupPublishing();
     }
@@ -134,7 +134,7 @@ public class SwerveSubsystem extends SubsystemBase {
                                             translation.getX(), 
                                             translation.getY(), 
                                             rotation, 
-                                            getYaw2d())
+                                            m_currentHeading2d)
                                         :
                                         new ChassisSpeeds(
                                             translation.getX(), 
@@ -186,7 +186,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void resetOdometry(Pose2d pose2d) {
-        m_swerveOdometry.resetPosition(getYaw2d(), getModulePositions(), pose2d);
+        m_swerveOdometry.resetPosition(m_currentHeading2d, getModulePositions(), pose2d);
     }
 
     public double getRobotTranslateVel() {
@@ -219,6 +219,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public void zeroGyro(){
         m_gyro.reset();
+        m_currentHeading2d = Rotation2d.fromDegrees(0.0);
     }
 
     public void setGyro(double newHeadingDeg){
@@ -226,11 +227,12 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public Rotation2d getYaw2d() {
-        // BaseStatusSignal.refreshAll(m_yawSignal); // optional but recommended 
-        // SRF has standardized on the Pigeon, so no need to invert the gyro output.
-        // yaw2d.plus(m_zeroYaw2D) just ensures that the result is between 0 and 360.
-        // .plus(arg) calls .rotateby(arg), and arg here is just 0.0 deg.
-        return (Rotation2d.fromDegrees(m_yawSignal.getValueAsDouble()*360)).plus(m_zeroDeg2D);
+        m_yawSignal.refresh();          // Must refresh() before reading data from StatusSignal
+        // SRF has standardized on the Pigeon, so no need to invert the gyro output,
+        // it is already CCW positive, and 0.0 is forward. Enforce a range of [-180, 180)
+        return (Rotation2d.fromDegrees(MathUtil.inputModulus(
+                                        (m_yawSignal.getValueAsDouble()*360),
+                                        -180.0, 180.0)));
     }
 
 /*
@@ -309,11 +311,18 @@ public class SwerveSubsystem extends SubsystemBase {
     */
     @Override
     public void periodic() {
-        m_currentHeading2d = getYaw2d();
+        m_currentHeading2d = getYaw2d();    // This calls refresh() per read, but note the cache
+                                            // of m_currentHeading here, which should be used in 
+                                            // place of getYaw2d() wherever possible to optimize
+                                            // CANbus traffic.
         if (RobotState.isEnabled()) {
             m_swerveOdometry.update(m_currentHeading2d, getModulePositions()); 
             m_location = m_swerveOdometry.getPoseMeters();
         }
+        // Allow SwerveModules to all refresh their StatusSignals
+        for(SwerveModule mod : m_swerveMods) {
+            mod.periodic();
+        }    
         publishSwerveDriveData();
     }
 

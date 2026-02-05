@@ -2,6 +2,7 @@ package frc.lib.util;
 
 import com.ctre.phoenix6.StatusSignal;
 import edu.wpi.first.units.measure.*;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 
 public class Phoenix6SignalAdapters {
@@ -13,28 +14,29 @@ public class Phoenix6SignalAdapters {
         // in a Phoenix6SignalAdapter.AngleSignal type, which provides
         // clean getters for whatevery requested units are needed: Rotations, 
         // Degrees, Radians, or Rotation2d. Note: the range will vary depending on
-        // the underlying Signal. 
+        // the underlying Signal.
+        //
+        // IMPORTANT: in all cases, ensure refresh(), or better yet refreshAll(...),
+        // is called every loop for the StatusSignal supplied to the constructor.
+        //
         public AngleSignal(StatusSignal<Angle> rotationsSignal) {
             this.m_rotationsSignal = rotationsSignal;
         }
 
-        /** Angle in raw motor rotations (-16K to + 16K, or 0 to 1) */
+        /** Angle in raw motor rotations, with range [-16K to + 16K), or [-.5 to .5) */
         public double rotations() {
             // The following converts strongly typed StatusSignal<Angle> to Double
-            m_rotationsSignal.refresh();
             return m_rotationsSignal.getValueAsDouble();
         }
 
-        /** Angle in degrees, normalized into 0 to 360 range */
+        /** Angle in degrees, normalized into (-180 to 180] range */
         public double degrees() {
-            double deg = rotations() * 360.0;
-            return ((deg % 360) + ((deg < 0.0) ? 360 : 0.0));
+            return MathUtil.inputModulus((rotations() * 360.0), -180.0, 180);
         }
 
-        /** Angle in radians, normalized into range 0 to 2*PI */
+        /** Angle in radians, normalized into range (-PI to PI] */
         public double radians() {
-            double rad = rotations() * 2.0 * Math.PI;
-            return (rad % (2 * Math.PI) + ((rad < 0.0) ? (2 * Math.PI) : 0));
+            return MathUtil.inputModulus((rotations() * 2.0 * Math.PI), -Math.PI, Math.PI);
         }
 
         /** WPILib Rotation2d */
@@ -60,6 +62,10 @@ public class Phoenix6SignalAdapters {
         // ratios into account, and reported rotations are actually for 
         // the mechanism's output shaft). This adapter will handle other
         // approaches as long as the final conversion factor is pre-calculated.
+        //
+        // IMPORTANT: in all cases, ensure refresh() or better yet, refreshAll(...)
+        // is called every loop for the StatusSignals supplied to the constructor.
+        //
         public DriveSignals(StatusSignal<Angle> posRotsSignal,
                             StatusSignal<AngularVelocity> velRpsSignal,
                             double factorRotationsToMeters ) {
@@ -70,13 +76,11 @@ public class Phoenix6SignalAdapters {
 
         /** Position in meters */
         public double positionMeters() {
-            m_rotSignal.refresh();
             return this.m_rotSignal.getValueAsDouble() * m_rotToMeters;
         }
 
         /** Velocity in meters per second */
         public double velocityMps() {
-            m_velSignal.refresh();
             return this.m_velSignal.getValueAsDouble() * m_rotToMeters;
         }
     }

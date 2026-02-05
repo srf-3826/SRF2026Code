@@ -6,8 +6,6 @@ import java.util.Map;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
-// import com.revrobotics.spark.SparkMax;
-// import com.revrobotics.spark.config.SparkBaseConfig;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -462,7 +460,7 @@ public final class Constants {
         // Best if getten by characterizing the robot, but these values worked
         // tolerably well in 2023 as is. Used during Auto mode moves, which are
         // tracked by Odometry.
-        public static final double MAX_ROBOT_SPEED_M_PER_SEC = 4.5; // 4.96 theoretically 
+        public static final double MAX_ROBOT_SPEED_M_PER_SEC = 5.5; // 4.96 theoretically 
         public static final double MAX_ROBOT_ANG_VEL_RAD_PER_SEC = 11.0; // 11.96 theoretically 
 
         // Swerve output fixed limit values for teleop control (reduce if

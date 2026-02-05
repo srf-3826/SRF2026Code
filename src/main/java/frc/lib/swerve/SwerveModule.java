@@ -8,13 +8,14 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.MotorOutputStatusValue;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.configs.*;
 import com.ctre.phoenix6.controls.*;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.StatusCode;
 
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.units.measure.*;
@@ -30,10 +31,13 @@ public class SwerveModule {
     private final TalonFX m_driveMotor;
     private final CANcoder m_absWheelAngleCANcoder;
 
-    // Cached StatusSignals (Phoenix 6 recommended pattern)
-    // Those prefixed with m_ are accessed directly in this module.
-    // Those without _m prefix are wrapped in a Phoenix6UnitsHelper 
-    // in the constructor, for access convenience in class methods.
+    //
+    // Create cached StatusSignals (Phoenix 6 recommended pattern)
+    // for all data utilized by this class,
+    // StatusSignals prefixed with m_ are accessed directly in this module.
+    // Those without the m_ prefix are wrapped in a Phoenix6SignalAdapter 
+    // helper object (instantiated in the constructor for this SwerveModule).
+    //
     private final StatusSignal<Angle> steerPosSignal;
     private final StatusSignal<Double> m_sMotorOutStatusSignal;
     private final StatusSignal<Temperature> m_steerTempSignal;
@@ -44,12 +48,11 @@ public class SwerveModule {
     private final StatusSignal<Temperature> m_driveTempSignal;
     private final StatusSignal<Current> m_driveCurrentSignal;
 
-    
     private final Phoenix6SignalAdapters.AngleSignal m_steerPosSignal;
     private final Phoenix6SignalAdapters.DriveSignals m_driveSignals;
     private final Phoenix6SignalAdapters.AngleSignal m_absWheelPosSignal;
 
-    private double m_lastAngle;
+    private double m_lastAngleDeg;
     private double m_velocityFeedForward;
 
     private final DutyCycleOut m_driveOpenLoop = new DutyCycleOut(0.0).withUpdateFreqHz(0);
@@ -72,7 +75,6 @@ public class SwerveModule {
     private GenericEntry steerTempEntry;
 
     public SwerveModule(int moduleNumber, SwerveModuleConstants moduleConstants, CANBus swerveCanbus) {
-
         m_modNum = moduleNumber;
         m_moduleConstants = moduleConstants;
 
@@ -105,6 +107,8 @@ public class SwerveModule {
         m_steerTempSignal.setUpdateFrequency(4);
         m_steerCurrentSignal.setUpdateFrequency(10);
 
+        // Now create StatusSignalAdapter objects that will do unit conversions
+        // per request
         m_steerPosSignal = new Phoenix6SignalAdapters.AngleSignal(steerPosSignal);
         m_driveSignals = new Phoenix6SignalAdapters.DriveSignals(drivePosSignal, 
                                                                  driveVelSignal,
@@ -115,7 +119,8 @@ public class SwerveModule {
         m_driveMotor.optimizeBusUtilization();
         m_absWheelAngleCANcoder.optimizeBusUtilization();
 
-        m_lastAngle = getState().angle.getDegrees();
+        // Initialize m_lastAngleDeg to the initial module state angle
+        m_lastAngleDeg = getState().angle.getDegrees();
 
         setupModulePublishing();
     }
@@ -124,44 +129,50 @@ public class SwerveModule {
     // Control Methods
     // -----------------------------
     public void setDesiredState(SwerveModuleState desiredState, boolean isOpenLoop) {
-        // Old approach,custom optimize
-        // desiredState = SwerveOptimize.optimize(desiredState., getState().angle);
-        // double desiredAngle = desiredState.angle.getDegrees();
-
-        // New approach - use WPI optimize, which takes currentAngle as Angle2d
-        Rotation2d currentAngle2d = getAngle2d();
-        desiredState.optimize(currentAngle2d);
+        // Note: isOpenLoop is only used to determine if the wheel drive motor should
+        // be driven with closed loop velocity control, or with 
+        Rotation2d currentAngle2d = getAngle2d();   // reads steering encoder to get wheel direction
+        desiredState.optimize(currentAngle2d);      // Compares desired angle to current angle,
+                                                    // computes shortest rotation direction
     
-        double desiredAngle = desiredState.angle.getDegrees();
-        // Ignore angle control unless the desired speed (before cos correction)
-        // will actually move the wheel
-        // TODO: replace MAX_ROBOT_SPEED_M_PER_SEC in the test expression below with a sysid 
-        // (or maybe TunerX) empiracly determined value, specifically the minimum motor 
-        // drive that will overcome stiction
-        if (Math.abs(desiredState.speedMetersPerSecond) > (SDC.MAX_ROBOT_SPEED_M_PER_SEC * 0.01)) {
-            setAngle(desiredAngle);
+        double desiredAngleDeg = desiredState.angle.getDegrees();
+        // Add a filter here to ignore angle control unless the desired speed 
+        // (before cos correction) will actually move the wheel. (Remember)
+        // desired speed is divided by MAX_ROBOT_SPEED_M_PER_SEC to essentially get 
+        // the motor drive output to achieve that speed (if duty cycle out were in use))
+        // TunerX in manual mode was used to determine that duty cycle out of .025 was
+        // needed to reliably move a wheel with no external friction (i.e. free air rotation).
+        // We use a slightly smaller number (.02) to get steering output active even before 
+        // the drive wheel starts moving. 
+        if (Math.abs(desiredState.speedMetersPerSecond) > (SDC.MAX_ROBOT_SPEED_M_PER_SEC * 0.02)) {
+            setAngle(desiredAngleDeg);
         }
-        // Finish with the module's wheel speed control. But first, to reduce skew when 
-        // changing direction, apply a cos correction, i.e. reduce the calculated desired 
-        // speed when the wheel is not pointing in the desired direction, proportional 
-        // to the cosine of the angle error.
-        // TODO: TEST how this cos correction affects robot maneuverability.
+        // Finish up this control method by setting the module's wheel speed. But first, 
+        // in order to reduce skew when changing directions, apply a cosine correction,  
+        // i.e. reduce the calculated desired speed for this module when the wheel is 
+        // currently not pointing in the desired direction, proportional to the cosine 
+        // of the angle error.
+        // TODO: TEST how this new cosine correction affects robot maneuverability.
         desiredState.speedMetersPerSecond *= desiredState.angle.minus(currentAngle2d).getCos();
         setSpeed(desiredState, isOpenLoop);
     }
 
     private void setSpeed(SwerveModuleState desiredState, boolean isOpenLoop) {
-
         if (isOpenLoop) {
+            // Just use duty cycle out
             m_driveOpenLoop.Output =
                 desiredState.speedMetersPerSecond / SDC.MAX_ROBOT_SPEED_M_PER_SEC;
             m_driveMotor.setControl(m_driveOpenLoop);
         } else {
+            // Closed loop, so use velocity PID with feed forward to control output
+            // based on m/sec converted to Talon Rotations / sec
             m_driveClosedLoop.Velocity =
                 desiredState.speedMetersPerSecond * SDC.MPS_TO_TALONFX_RPS_FACTOR;
 
+            // The old FF calculate(vel)) method has been deprecated
+            // use calculateWithVelocities(currentVel, nextVel) instead
             m_velocityFeedForward =
-                feedforward.calculate(desiredState.speedMetersPerSecond);
+                feedforward.calculateWithVelocities(getVelocityMPS(), desiredState.speedMetersPerSecond);
 
             m_driveMotor.setControl(
                 m_driveClosedLoop.withFeedForward(m_velocityFeedForward)
@@ -169,24 +180,32 @@ public class SwerveModule {
         }
     }
 
-    public void setAngle(double desiredAngle) {
+    public void setAngle(double desiredAngleDeg) {
         m_steerClosedLoop.Position =
-            desiredAngle * SDC.ANGLE_TO_ROTATION_FACTOR;
+            desiredAngleDeg * SDC.ANGLE_TO_ROTATION_FACTOR;
         m_steerMotor.setControl(m_steerClosedLoop);
-        m_lastAngle = desiredAngle;
+        m_lastAngleDeg = desiredAngleDeg;
     }
 
     // -----------------------------
     // Sensor Access (Phoenix 6 optimized)
     // -----------------------------
+
+    // Return the current wheel direction, read from the steering motor
+    // Note that the steering motor uses a relative encoder - it must be
+    // initialized to the current wheel direction upon startup
     private Rotation2d getAngle2d() {
         return m_steerPosSignal.asRotation2d();
     }
 
+    // Return current Abs CANCoder direction - note that this value 
+    // is Absolute, already corrected for MagnetOffset
     public double getCANcoderDeg() {
         return m_absWheelPosSignal.degrees();
     }
 
+    // Return the current state of the module - the current wheel speed (read from
+    // the drive motor) and the current wheel direction (read from the steering motor)
     public SwerveModuleState getState() {
         return new SwerveModuleState(
             getVelocityMPS(),
@@ -194,45 +213,75 @@ public class SwerveModule {
         );
     }
 
+    // Return the current distance traveled by the wheel in meters, since start up.
     public double getPositionM() {
         return m_driveSignals.positionMeters();
     }
 
+    // Return the current wheel speed (rotations/sec, read from the drive motor,
+    // converted to meters/sec traveled by the wheel
     public double getVelocityMPS() {
         return m_driveSignals.velocityMps();
     }
 
+    // Returns the current distance traveled by the wheel, together with the
+    // current direction of the wheel
     public SwerveModulePosition getModulePosition() {
         return new SwerveModulePosition(getPositionM(), getAngle2d());
     }
 
     // -----------------------------
-    // Absolute Encoder Sync
+    // Sync Absolute Encoder to relative TalonFX rotor sensor in steering motor
     // -----------------------------
     public void resetToAbsolute() {
         waitForCANcoder();
         m_steerMotor.setPosition(getCANcoderDeg() * SDC.ANGLE_TO_ROTATION_FACTOR);
     }
 
+
+    // Ensure that we can talk to the CANCOder before syncing to the Steering motor
     private void waitForCANcoder() {
-        var status = absPosSignal;
+        StatusCode err;
         for (int i = 0; i < 100; i++) {
-            if (status.getStatus().isOK()) break;
-            Timer.delay(0.010);
+            absPosSignal.refresh();
+            if (absPosSignal.getStatus().isOK()) break;
+            System.out.println("Mod "+m_modNum+" Waiting for CANCoder refresh issue: "
+                                +absPosSignal.getStatus().getDescription());
+            Timer.delay(0.005);
         }
-        status.waitForUpdate(200);
+        absPosSignal.waitForUpdate(200);
+        if (! absPosSignal.getStatus().isOK()) {
+            System.out.println("Mod "+m_modNum+" CANCoder waitForUpdate() issue: "
+                                +absPosSignal.getStatus().getDescription());
+        }
     }
 
     // -----------------------------
     // Configuration
     // -----------------------------
+
+    // Cancoder
+    // This CANcoder reports absolute position from [0, 1) rotations,
+    // (convert to [-180, 180) via PhoenixSignalAdapters.degrees())
+    // with a MagnetOffset (recorded in Constants.java) for the appropriate module
+    // written here (when constructed) but not actually applied until the
+    // next power cycle / boot up. CounterClockwise positive is the default,
+    // but we set it anyway just to be sure.
+    //
     private void configAbsCANcoder() {
-        var cfg = new CANcoderConfiguration();
-        cfg.MagnetSensor.MagnetOffset =
-            m_moduleConstants.ABS_ANG_OFFSET2D.getDegrees() * SDC.ANGLE_TO_ROTATION_FACTOR;
-        m_absWheelAngleCANcoder.getConfigurator().apply(cfg);
+        CANcoderConfiguration cfg = new CANcoderConfiguration(); 
+        cfg.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive; 
+        cfg.MagnetSensor.MagnetOffset = m_moduleConstants.ABS_ANG_OFFSET2D.getDegrees() 
+                                        * SDC.ANGLE_TO_ROTATION_FACTOR;
+        StatusCode err = m_absWheelAngleCANcoder.getConfigurator().apply(cfg);
+        if (! err.isOK()) System.out.println("Mod "+m_modNum+" CANCoder Config: "
+                                              +err.getDescription());
     }
 
+    //
+    // Configure steer motor (with TalonFX controller) with parameters
+    // recorded in Constants.java, and passed into this SwerveModule class as
+    // 
     private void configSteerMotor() {
         var cfg = new TalonFXConfiguration();
         cfg.Feedback.SensorToMechanismRatio = SDC.STEER_GEAR_RATIO;
@@ -243,7 +292,9 @@ public class SwerveModule {
         cfg.Slot0.kD = SDC.STEER_KD;
         cfg.ClosedLoopGeneral.ContinuousWrap = true;
 
-        m_steerMotor.getConfigurator().apply(cfg);
+        StatusCode err = m_steerMotor.getConfigurator().apply(cfg);
+        if (! err.isOK()) System.out.println("Mod "+m_modNum+" Steering Motor Config: "
+                                              +err.getDescription());
     }
 
     private void configDriveMotor() {
@@ -255,7 +306,29 @@ public class SwerveModule {
         cfg.Slot0.kI = SDC.DRIVE_KI;
         cfg.Slot0.kD = SDC.DRIVE_KD;
 
-        m_driveMotor.getConfigurator().apply(cfg);
+        StatusCode err = m_driveMotor.getConfigurator().apply(cfg);
+        if (! err.isOK()) System.out.println("Mod "+m_modNum+" Drive Motor Config: "
+                                              +err.toString());
+    }
+
+    // -----------------------------------------
+    // periodic()
+    // Called from SwerveSubsystem's periodic()
+    // Mostly just needs to refresh StatusSignals
+    // -----------------------------------------
+
+    public void periodic() {
+        BaseStatusSignal.refreshAll(
+                                    steerPosSignal,
+                                    m_sMotorOutStatusSignal,
+                                    m_steerTempSignal,
+                                    m_steerCurrentSignal,
+                                    absPosSignal,
+                                    drivePosSignal,
+                                    driveVelSignal,
+                                    m_driveTempSignal,
+                                    m_driveCurrentSignal
+                                   );
     }
 
     // -----------------------------
@@ -305,16 +378,9 @@ public class SwerveModule {
      }
 
     public void publishModuleData() {
-        m_driveCurrentSignal.refresh();
-        m_sMotorOutStatusSignal.refresh();
-        m_driveTempSignal.refresh();
-        m_driveCurrentSignal.refresh();
-        m_steerTempSignal.refresh();
-        m_steerCurrentSignal.refresh();
-
         absCANcoderDegEntry.setString(F.df1.format(getCANcoderDeg()));
         steerEncoderDegEntry.setString(F.df1.format(m_steerPosSignal.degrees()));
-        steerSetpointDegEntry.setString(F.df1.format(m_lastAngle));
+        steerSetpointDegEntry.setString(F.df1.format(m_lastAngleDeg));
         steerPIDOutputEntry.setString(F.df2.format(m_sMotorOutStatusSignal.getValue()));
         wheelAmpsEntry.setString(F.df1.format(m_driveCurrentSignal.getValueAsDouble()));
         wheelTempEntry.setString(F.df1.format(m_driveTempSignal.getValueAsDouble()));
