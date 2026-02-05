@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
 import frc.lib.swerve.SwerveModule;
+import frc.lib.Sensors.GyroIO;
 import frc.robot.Constants.*;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -10,17 +11,12 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import java.util.Map;
 
 import com.ctre.phoenix6.CANBus;
-import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.hardware.Pigeon2;
-import com.ctre.phoenix6.configs.Pigeon2Configuration;
 
 import edu.wpi.first.networktables.GenericEntry;
-import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -35,8 +31,7 @@ public class SwerveSubsystem extends SubsystemBase {
     private SwerveModule[] m_swerveMods;
     private SwerveModuleState[] m_states = new SwerveModuleState[4];
 
-    private Pigeon2 m_gyro;
-    private final StatusSignal<Angle> m_yawSignal;
+    private GyroIO m_gyro;
     private Rotation2d m_currentHeading2d;
 
     private Translation2d m_cenOfRotationOffset = SDC.REL_POS2D_CEN;
@@ -57,21 +52,15 @@ public class SwerveSubsystem extends SubsystemBase {
     private GenericEntry        m_isFieldOrientedEntry;
     // private GenericEntry        m_gyroPitchEntry;
     // private GenericEntry        m_gyroRollEntry;
-    public GenericEntry        m_odometryPoseXEntry;
-    public GenericEntry        m_odometryPoseYEntry;
+    public GenericEntry         m_odometryPoseXEntry;
+    public GenericEntry         m_odometryPoseYEntry;
     private GenericEntry        m_odometryHeadingEntry;
 
     private double m_lastPublishTime = 0;
     
-    public SwerveSubsystem(CANBus swerveCanbus) {
-        m_gyro = new Pigeon2(GC.PIGEON_2_CANID, swerveCanbus);
-        Pigeon2Configuration p2Config = new Pigeon2Configuration();
-        m_gyro.getConfigurator().apply(p2Config);
-        zeroGyro();
-        m_yawSignal = m_gyro.getYaw();
-        m_gyro.optimizeBusUtilization();
-
-        SmartDashboard.putNumber("Chosen Module Circumference M =", SDC.WHEEL_CIRCUMFERENCE_M);
+    public SwerveSubsystem(GyroIO gyro, CANBus swerveCanbus) {
+        m_gyro = gyro;
+        m_currentHeading2d = getYaw2d();
 
         m_swerveMods = new SwerveModule[] {
             new SwerveModule(0, SDC.FL_Mod0.MODULE_CONSTANTS, swerveCanbus),
@@ -81,7 +70,8 @@ public class SwerveSubsystem extends SubsystemBase {
         };
 
         // By pausing init for a second before setting module offsets, we avoid 
-        // a bug with inverting motors.
+        // a bug with inverting motors. This call is thread blocking, but is only 
+        // called once at startup, so ignore.
         // See https://github.com/Team364/BaseFalconSwerve/issues/8 for more info.
         Timer.delay(1.0);
         // Update 1/2024: also added waitForCANcoder method in SwerveModule, 
@@ -90,7 +80,7 @@ public class SwerveSubsystem extends SubsystemBase {
         resetModulesToAbsolute();
 
         m_swerveOdometry = new SwerveDriveOdometry(SDC.SWERVE_KINEMATICS, 
-                                                   getYaw2d(),              // Only called once here, no optimization needed
+                                                   m_currentHeading2d,
                                                    getModulePositions());
         setupPublishing();
     }
@@ -217,33 +207,15 @@ public class SwerveSubsystem extends SubsystemBase {
         return positions;
     }
 
-    public void zeroGyro(){
-        m_gyro.reset();
-        m_currentHeading2d = Rotation2d.fromDegrees(0.0);
-    }
-
-    public void setGyro(double newHeadingDeg){
-        m_gyro.setYaw(newHeadingDeg);
+    public void zeroGyro() {
+        m_gyro.zeroGyro();
+        m_currentHeading2d = getYaw2d();
     }
 
     public Rotation2d getYaw2d() {
-        m_yawSignal.refresh();          // Must refresh() before reading data from StatusSignal
-        // SRF has standardized on the Pigeon, so no need to invert the gyro output,
-        // it is already CCW positive, and 0.0 is forward. Enforce a range of [-180, 180)
-        return (Rotation2d.fromDegrees(MathUtil.inputModulus(
-                                        (m_yawSignal.getValueAsDouble()*360),
-                                        -180.0, 180.0)));
+        return m_gyro.getRotation2d();
     }
 
-/*
-    public Rotation2d getPitch() {
-        return Rotation2d.fromDegrees(m_gyro.getPitch().getValueAsDouble());
-    }
-
-    public Rotation2d getRoll() {
-        return Rotation2d.fromDegrees(m_gyro.getRoll().getValueAsDouble());        
-    }
-*/
     public void resetModulesToAbsolute(){
         for(SwerveModule mod : m_swerveMods){
             mod.resetToAbsolute();
@@ -311,17 +283,15 @@ public class SwerveSubsystem extends SubsystemBase {
     */
     @Override
     public void periodic() {
-        m_currentHeading2d = getYaw2d();    // This calls refresh() per read, but note the cache
-                                            // of m_currentHeading here, which should be used in 
-                                            // place of getYaw2d() wherever possible to optimize
-                                            // CANbus traffic.
+        m_currentHeading2d = getYaw2d();
+
         if (RobotState.isEnabled()) {
             m_swerveOdometry.update(m_currentHeading2d, getModulePositions()); 
             m_location = m_swerveOdometry.getPoseMeters();
         }
         // Allow SwerveModules to all refresh their StatusSignals
         for(SwerveModule mod : m_swerveMods) {
-            mod.periodic();
+            mod.update();
         }    
         publishSwerveDriveData();
     }

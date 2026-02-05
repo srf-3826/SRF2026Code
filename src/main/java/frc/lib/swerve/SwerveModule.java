@@ -1,6 +1,6 @@
 package frc.lib.swerve;
 
-import frc.lib.util.Phoenix6SignalAdapters;
+import frc.lib.Sensors.Phoenix6SignalAdapters;
 import frc.robot.Constants.*;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -8,6 +8,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.configs.*;
@@ -21,6 +22,7 @@ import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class SwerveModule {
 
@@ -241,7 +243,6 @@ public class SwerveModule {
 
     // Ensure that we can talk to the CANCOder before syncing to the Steering motor
     private void waitForCANcoder() {
-        StatusCode err;
         for (int i = 0; i < 100; i++) {
             absPosSignal.refresh();
             if (absPosSignal.getStatus().isOK()) break;
@@ -283,41 +284,88 @@ public class SwerveModule {
     // recorded in Constants.java, and passed into this SwerveModule class as
     // 
     private void configSteerMotor() {
-        var cfg = new TalonFXConfiguration();
-        cfg.Feedback.SensorToMechanismRatio = SDC.STEER_GEAR_RATIO;
-        cfg.MotorOutput.Inverted = SDC.STEER_MOTOR_INVERT;
-        cfg.MotorOutput.NeutralMode = SDC.STEER_MOTOR_NEUTRAL_MODE;
-        cfg.Slot0.kP = SDC.STEER_KP;
-        cfg.Slot0.kI = SDC.STEER_KI;
-        cfg.Slot0.kD = SDC.STEER_KD;
-        cfg.ClosedLoopGeneral.ContinuousWrap = true;
+        var openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
+                                                       .withVoltageOpenLoopRampPeriod(SDC.OPEN_LOOP_RAMP_PERIOD);
+                                                       //.withTorqueOpenLoopRampPeriod(0);
+        var closedLoopConfig = new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0)
+                                                           .withVoltageClosedLoopRampPeriod(SDC.CLOSED_LOOP_RAMP_PERIOD)
+                                                           .withTorqueClosedLoopRampPeriod(0);
+        var closedLoopGeneralConfig = new ClosedLoopGeneralConfigs().withContinuousWrap(true);
+        var feedbackConfig = new FeedbackConfigs().withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
+                                                  .withSensorToMechanismRatio(SDC.STEER_GEAR_RATIO)
+                                                  .withRotorToSensorRatio(1.0);
+        MotorOutputConfigs motorOutputConfig = new MotorOutputConfigs()
+                                                        .withNeutralMode(SDC.STEER_MOTOR_NEUTRAL_MODE)
+                                                        .withInverted(SDC.STEER_MOTOR_INVERT)
+                                                        .withPeakForwardDutyCycle(SDC.OUTPUT_ROTATE_LIMIT_FACTOR)
+                                                        .withPeakReverseDutyCycle(-SDC.OUTPUT_ROTATE_LIMIT_FACTOR);
+                                                        //.withDutyCycleNeutralDeadband(.001);
+        CurrentLimitsConfigs currentLimitConfig = new CurrentLimitsConfigs()
+                                                        .withSupplyCurrentLimit(SDC.STEER_SUPPLY_CURRENT_LIMIT)
+                                                        .withSupplyCurrentLimitEnable(SDC.STEER_ENABLE_SUPPLY_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimit(SDC.STEER_STATOR_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimitEnable(SDC.STEER_ENABLE_STATOR_CURRENT_LIMIT );
+        Slot0Configs pid0Configs = new Slot0Configs().withKP(SDC.STEER_KP)
+                                                     .withKI(SDC.STEER_KI)
+                                                     .withKD(SDC.STEER_KD);
+        var swerveDriveConfig = new TalonFXConfiguration().withFeedback(feedbackConfig)
+                                                          .withMotorOutput(motorOutputConfig)
+                                                          .withCurrentLimits(currentLimitConfig)
+                                                          .withOpenLoopRamps(openLoopConfig)
+                                                          .withClosedLoopRamps(closedLoopConfig)
+                                                          .withClosedLoopGeneral(closedLoopGeneralConfig)
+                                                          .withSlot0(pid0Configs);
+        StatusCode status = m_steerMotor.getConfigurator().apply(swerveDriveConfig);
 
-        StatusCode err = m_steerMotor.getConfigurator().apply(cfg);
-        if (! err.isOK()) System.out.println("Mod "+m_modNum+" Steering Motor Config: "
-                                              +err.getDescription());
+        if (! status.isOK()) System.out.println("Mod "+m_modNum+" Steering Motor Config: "
+                                                 +status.getDescription());
     }
 
     private void configDriveMotor() {
-        var cfg = new TalonFXConfiguration();
-        cfg.Feedback.SensorToMechanismRatio = SDC.DRIVE_GEAR_RATIO;
-        cfg.MotorOutput.Inverted = SDC.DRIVE_MOTOR_INVERT;
-        cfg.MotorOutput.NeutralMode = SDC.DRIVE_MOTOR_NEUTRAL_MODE;
-        cfg.Slot0.kP = SDC.DRIVE_KP;
-        cfg.Slot0.kI = SDC.DRIVE_KI;
-        cfg.Slot0.kD = SDC.DRIVE_KD;
+        var openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
+                                                       .withVoltageOpenLoopRampPeriod(SDC.OPEN_LOOP_RAMP_PERIOD);
+                                                       //.withTorqueOpenLoopRampPeriod(0);
+        var closedLoopConfig = new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0)
+                                                           .withVoltageClosedLoopRampPeriod(SDC.CLOSED_LOOP_RAMP_PERIOD)
+                                                           .withTorqueClosedLoopRampPeriod(0);
+        var feedbackConfig = new FeedbackConfigs().withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
+                                                  .withSensorToMechanismRatio(SDC.DRIVE_GEAR_RATIO)
+                                                  .withRotorToSensorRatio(1.0);
+        var motorOutputConfig = new MotorOutputConfigs().withNeutralMode(SDC.DRIVE_MOTOR_NEUTRAL_MODE)
+                                                        .withInverted(SDC.DRIVE_MOTOR_INVERT)
+                                                        .withPeakForwardDutyCycle(SDC.OUTPUT_DRIVE_LIMIT_FACTOR)
+                                                        .withPeakReverseDutyCycle(-SDC.OUTPUT_DRIVE_LIMIT_FACTOR);
+                                                        //.withDutyCycleNeutralDeadband(.001);
+        CurrentLimitsConfigs currentLimitConfig = new CurrentLimitsConfigs()
+                                                        .withSupplyCurrentLimit(SDC.DRIVE_SUPPLY_CURRENT_LIMIT)
+                                                        .withSupplyCurrentLimitEnable(SDC.DRIVE_ENABLE_SUPPLY_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimit(SDC.DRIVE_STATOR_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimitEnable(SDC.DRIVE_ENABLE_STATOR_CURRENT_LIMIT );
+        Slot0Configs pid0Configs = new Slot0Configs().withKP(SDC.DRIVE_KP)
+                                                     .withKI(SDC.DRIVE_KI)
+                                                     .withKD(SDC.DRIVE_KD)
+                                                     .withKS(SDC.DRIVE_KS)
+                                                     .withKV(SDC.DRIVE_KV)
+                                                     .withKA(SDC.DRIVE_KA);
+        var swerveDriveConfig = new TalonFXConfiguration().withFeedback(feedbackConfig)
+                                                          .withMotorOutput(motorOutputConfig)
+                                                          .withCurrentLimits(currentLimitConfig)
+                                                          .withOpenLoopRamps(openLoopConfig)
+                                                          .withClosedLoopRamps(closedLoopConfig)
+                                                          .withSlot0(pid0Configs);
+        StatusCode status = m_driveMotor.getConfigurator().apply(swerveDriveConfig);
 
-        StatusCode err = m_driveMotor.getConfigurator().apply(cfg);
-        if (! err.isOK()) System.out.println("Mod "+m_modNum+" Drive Motor Config: "
-                                              +err.toString());
+        if (! status.isOK()) System.out.println("Mod "+m_modNum+" Drive Motor Config: "
+                                                +status.getDescription());
     }
 
     // -----------------------------------------
-    // periodic()
+    // update()
     // Called from SwerveSubsystem's periodic()
     // Mostly just needs to refresh StatusSignals
     // -----------------------------------------
 
-    public void periodic() {
+    public void update() {
         BaseStatusSignal.refreshAll(
                                     steerPosSignal,
                                     m_sMotorOutStatusSignal,

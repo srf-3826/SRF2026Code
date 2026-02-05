@@ -1,4 +1,4 @@
-package frc.lib.util;
+package frc.lib.Sensors;
 
 import edu.wpi.first.math.MathUtil;
 //import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;

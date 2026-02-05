@@ -77,236 +77,53 @@ public final class Constants {
         public static final double COLSON_WHEEL_DIA_INCHES = 3.96;
         public static final double PARADE_WHEEL_DIA_INCHES = 3.75;
 
-        // The 2025 chassis (Crush) measures 28" x 32", and uses Mk4i-L2 modules.
-        // The wheel to wheel distances for Crush are: Width = 22.75", and length = 26.75"
-        // (wheels are inset just 2-5/8" from frame sides).
-        // The 2024 chassis (Tsunami) measures 28" x 30", and uses Mk4i-L2 modules. 
-        // The wheel to wheel disances for Tsunami are: Width = 22.75", and length = 24.75" 
-        // (wheels are inset just 2-5/8" from frame sides).
-        // The 2023 chassis (BlackKnight) measures 26" x 30" and uses Mk4-L2 modules. 
-        // The wheel to wheel distances for BlackKnight are: Width = 19.5", and length = 23.5"
-        // (wheels are inset 3.25" from frame sides).
-        public static final double BLACK_KNIGHT_TRACK_WIDTH = Units.inchesToMeters(19.5); 
-        public static final double BLACK_KNIGHT_WHEEL_BASE = Units.inchesToMeters(23.5); 
-        public static final double HALF_BKTW = BLACK_KNIGHT_TRACK_WIDTH / 2.0;
-        public static final double HALF_BKWB = BLACK_KNIGHT_WHEEL_BASE / 2.0;
-
-        // TSUNAMI frame is 28" W x 30" L 
-        public static final double TSUNAMI_TRACK_WIDTH = Units.inchesToMeters(22.75); 
-        public static final double TSUNAMI_WHEEL_BASE = Units.inchesToMeters(24.75); 
-        public static final double HALF_TTW = TSUNAMI_TRACK_WIDTH / 2.0;
-        public static final double HALF_TWB = TSUNAMI_WHEEL_BASE / 2.0;
-
-        // CRUSH frame is 28" W x 32" L
-        public static final double CRUSH_TRACK_WIDTH = Units.inchesToMeters(22.75); 
-        public static final double CRUSH_WHEEL_BASE = Units.inchesToMeters(26.75); 
-        public static final double HALF_CTW = CRUSH_TRACK_WIDTH / 2.0;
-        public static final double HALF_CWB = CRUSH_WHEEL_BASE / 2.0;
-
-        // REBUILT frame is 29" W x 24" L
+         // REBUILT frame is 29" W x 24" L
         public static final double REBUILT_TRACK_WIDTH = Units.inchesToMeters(23.75); 
         public static final double REBUILT_WHEEL_BASE = Units.inchesToMeters(18.75); 
         public static final double HALF_RTW = REBUILT_TRACK_WIDTH / 2.0;
         public static final double HALF_RWB = REBUILT_WHEEL_BASE / 2.0;
-
-        public static final Translation2d BK_FL = new Translation2d(HALF_BKWB, HALF_BKTW);                                    
-        public static final Translation2d BK_FR = new Translation2d(HALF_BKWB, -HALF_BKTW);
-        public static final Translation2d BK_BL = new Translation2d(-HALF_BKWB, HALF_BKTW);
-        public static final Translation2d BK_BR = new Translation2d(-HALF_BKWB, -HALF_BKTW);
-
-        public static final Translation2d T_FL = new Translation2d(HALF_TWB, HALF_TTW);                                    
-        public static final Translation2d T_FR = new Translation2d(HALF_TWB, -HALF_TTW);
-        public static final Translation2d T_BL = new Translation2d(-HALF_TWB, HALF_TTW);
-        public static final Translation2d T_BR = new Translation2d(-HALF_TWB, -HALF_TTW);
-
-        public static final Translation2d C_FL = new Translation2d(HALF_CWB, HALF_CTW);                                    
-        public static final Translation2d C_FR = new Translation2d(HALF_CWB, -HALF_CTW);
-        public static final Translation2d C_BL = new Translation2d(-HALF_CWB, HALF_CTW);
-        public static final Translation2d C_BR = new Translation2d(-HALF_CWB, -HALF_CTW);
 
         public static final Translation2d R_FL = new Translation2d(HALF_RWB, HALF_RTW);                                    
         public static final Translation2d R_FR = new Translation2d(HALF_RWB, -HALF_RTW);
         public static final Translation2d R_BL = new Translation2d(-HALF_RWB, HALF_RTW);
         public static final Translation2d R_BR = new Translation2d(-HALF_RWB, -HALF_RTW);
 
-        // Offsets for changing the center of rotation, if needed, are the same as the
-        // Translation2d coordinates of each corner, plus the center of the robot.
+        // Offsets for the center of rotation, if needed, are the same as the
+        // Translation2d coordinates of each corner. The center of the robot is the default,
+        // defined here.
         // See SwerveSubsystem. Corner rotations are especially useful for blocking 
-        // while playing defense, and sometimes even for evasion while on offense, but 
-        // requires (and ties up) a significant number of GameController button resources
-        // (min 4 buttons, or 5 if not using temporary "active only when held" buttons) 
-        // so doing this may not be practical for a given season.
+        // while playing defense, and sometimes even for evasion while on offense.
         public static final Translation2d   REL_POS2D_CEN = new Translation2d(0, 0);
 
-        // Wheel angles for Back KNight to "park" - makes it difficult to move, slide, or be pushed
-        public static final double BK_PARK_ANGLE_LEFT_DEG = 50.2;
-        public static final double BK_PARK_ANGLE_RIGHT_DEG = 129.8;
-
-        // Wheel angles for Tsunami "park"
-        public static final double T_PARK_ANGLE_LEFT_DEG = 45.0;
-        public static final double T_PARK_ANGLE_RIGHT_DEG = -45.0;
-
-        // Wheel angles for Crush "park"
-        public static final double C_PARK_ANGLE_LEFT_DEG = 45.0;
-        public static final double C_PARK_ANGLE_RIGHT_DEG = -45.0;
-        
-        // Wheel angles for Rebuilt "park"
+        // Wheel angles for Rebuilt "park" - makes it difficult to move, slide, or be pushed
         public static final double R_PARK_ANGLE_LEFT_DEG = 45.0;
         public static final double R_PARK_ANGLE_RIGHT_DEG = -45.0;
 
-        // Differentiate SDS module types MK4 and MK4i
-        // which are used with the Black Knight and Tsunami chassis, respectively
-        // 
-        // Swerve Drive Specialties: MK4-L2 Module on Black Knight
-        public static SDS_SwerveUnitParams SDSMK4_BLACK_KNIGHT(double wheelDiaInches){
-            double wheelDiaM = Units.inchesToMeters(wheelDiaInches);
-            Translation2d relPos2D_FL = BK_FL;
-            Translation2d relPos2D_FR = BK_FR;
-            Translation2d relPos2D_BL = BK_BL;
-            Translation2d relPos2D_BR = BK_BR;
-            Rotation2d absOffsetFL = Rotation2d.fromDegrees(250.8);
-            Rotation2d absOffsetFR = Rotation2d.fromDegrees(252.4);
-            Rotation2d absOffsetBL = Rotation2d.fromDegrees(305.3);
-            Rotation2d absOffsetBR = Rotation2d.fromDegrees(103.0);
-            double parkAngleLeftDeg = BK_PARK_ANGLE_LEFT_DEG;
-            double parkAngleRightDeg = BK_PARK_ANGLE_RIGHT_DEG;
-            double steerGearRatio = (12.8 / 1.0);
-            // L2 Drive Gear Ratio
-            double driveL2GearRatio = (6.75 / 1.0);
-            double steerKP = 0.005;         // Was .2 for angles in radians
-            double steerKI = 0.0;
-            double steerKD = 0.0;
-            double steerKF = 0.0;
-            InvertedValue driveMotorInvert = InvertedValue.Clockwise_Positive;
-            InvertedValue steerMotorInvert = InvertedValue.Clockwise_Positive;
-            SensorDirectionValue canCoderDir = SensorDirectionValue.CounterClockwise_Positive;
-            return new SDS_SwerveUnitParams(wheelDiaM,
-                                            relPos2D_FL,
-                                            relPos2D_FR,
-                                            relPos2D_BL,
-                                            relPos2D_BR,
-                                            absOffsetFL, 
-                                            absOffsetFR, 
-                                            absOffsetBL, 
-                                            absOffsetBR, 
-                                            parkAngleLeftDeg,
-                                            parkAngleRightDeg,
-                                            steerGearRatio, 
-                                            driveL2GearRatio, 
-                                            steerKP, 
-                                            steerKI, 
-                                            steerKD, 
-                                            steerKF, 
-                                            driveMotorInvert, 
-                                            steerMotorInvert, 
-                                            canCoderDir);
-        }
-
-        // Swerve Drive Specialties: MK4I-L2 Module
-        public static SDS_SwerveUnitParams SDSMK4i_TSUNAMI(double wheelDiaInches){
-            double wheelDiaM = Units.inchesToMeters(wheelDiaInches);
-            Translation2d relPos2D_FL = T_FL;
-            Translation2d relPos2D_FR = T_FR;
-            Translation2d relPos2D_BL = T_BL;
-            Translation2d relPos2D_BR = T_BR;
-            Rotation2d absOffsetFL = Rotation2d.fromDegrees(121.1);
-            Rotation2d absOffsetFR = Rotation2d.fromDegrees(335.41);
-            Rotation2d absOffsetBL = Rotation2d.fromDegrees(261.7);
-            Rotation2d absOffsetBR = Rotation2d.fromDegrees(35.58);
-            double parkAngleLeftDeg = T_PARK_ANGLE_LEFT_DEG;
-            double parkAngleRightDeg = T_PARK_ANGLE_RIGHT_DEG;
-            double steerGearRatio = ((150.0 / 7.0) / 1.0);
-            // L2 Drive Gear Ratio
-            double driveL2GearRatio = (6.75 / 1.0);
-            double steerKP = 0.008;             // was .3 for angles in radians
-            double steerKI = 0.0;
-            double steerKD = 0.0;
-            double steerKF = 0.0;
-            InvertedValue driveMotorInvert = InvertedValue.CounterClockwise_Positive;   // Tsunami is inverted from Black Knight
-            InvertedValue steerMotorInvert = InvertedValue.CounterClockwise_Positive;
-            SensorDirectionValue canCoderDir = SensorDirectionValue.CounterClockwise_Positive;
-            
-            return new SDS_SwerveUnitParams(wheelDiaM,
-                                            relPos2D_FL,
-                                            relPos2D_FR,
-                                            relPos2D_BL,
-                                            relPos2D_BR,
-                                            absOffsetFL,
-                                            absOffsetFR,
-                                            absOffsetBL,
-                                            absOffsetBR,
-                                            parkAngleLeftDeg,
-                                            parkAngleRightDeg,
-                                            steerGearRatio, 
-                                            driveL2GearRatio, 
-                                            steerKP, 
-                                            steerKI, 
-                                            steerKD, 
-                                            steerKF, 
-                                            driveMotorInvert, 
-                                            steerMotorInvert, 
-                                            canCoderDir);
-        }
-
-        public static SDS_SwerveUnitParams SDSMK4i_CRUSH(double wheelDiaInches){
-            double wheelDiaM = Units.inchesToMeters(wheelDiaInches);
-            Translation2d relPos2D_FL = C_FL;
-            Translation2d relPos2D_FR = C_FR;
-            Translation2d relPos2D_BL = C_BL;
-            Translation2d relPos2D_BR = C_BR;
-            Rotation2d absOffsetFL = Rotation2d.fromDegrees(-74.4); //was 287.8 deg
-            Rotation2d absOffsetFR = Rotation2d.fromDegrees(-219.4); //was 342.5 deg
-            Rotation2d absOffsetBL = Rotation2d.fromDegrees(-343.7);  //was 17.0 deg
-            Rotation2d absOffsetBR = Rotation2d.fromDegrees(-17.8); //was 341 deg
-            double parkAngleLeftDeg = C_PARK_ANGLE_LEFT_DEG;
-            double parkAngleRightDeg = C_PARK_ANGLE_RIGHT_DEG;
-            double steerGearRatio = ((150.0 / 7.0) / 1.0);
-            // L2+ Drive Gear Ratio
-            double driveL2GearRatio = (5.9 / 1.0);
-            double steerKP = 75;             // was .3 for angles in radians
-            double steerKI = 0.0;
-            double steerKD = 0.0;
-            double steerKF = 0.0;
-            InvertedValue driveMotorInvert = InvertedValue.Clockwise_Positive;   // Crush is inverted from Black Knight
-            InvertedValue steerMotorInvert = InvertedValue.Clockwise_Positive;
-            SensorDirectionValue canCoderDir = SensorDirectionValue.CounterClockwise_Positive;
- 
-            return new SDS_SwerveUnitParams(wheelDiaM,
-                                            relPos2D_FL,
-                                            relPos2D_FR,
-                                            relPos2D_BL,
-                                            relPos2D_BR,
-                                            absOffsetFL,
-                                            absOffsetFR,
-                                            absOffsetBL,
-                                            absOffsetBR,
-                                            parkAngleLeftDeg,
-                                            parkAngleRightDeg,
-                                            steerGearRatio, 
-                                            driveL2GearRatio, 
-                                            steerKP, 
-                                            steerKI, 
-                                            steerKD, 
-                                            steerKF, 
-                                            driveMotorInvert, 
-                                            steerMotorInvert, 
-                                            canCoderDir);
-        }
-
-        public static SDS_SwerveUnitParams SDSMK4i_REBUILT(double wheelDiaInches){
+       public static SDS_SwerveUnitParams SDSMK4i_REBUILT(double wheelDiaInches){
             double wheelDiaM = Units.inchesToMeters(wheelDiaInches);
             Translation2d relPos2D_FL = R_FL;
             Translation2d relPos2D_FR = R_FR;
             Translation2d relPos2D_BL = R_BL;
             Translation2d relPos2D_BR = R_BR;
-            // TODO: with the wheels all facing forward, measure and enter REBUILT 
-            // absolute wheel angle offsets, in degrees, here
-            // Caution! The published CCDeg values per swerve module on the Dashboard
-            // are now corrected internally to each CANCoder, for the specified 
-            // magnetic offsets entered here. So you must first set all offsets
-            // to 0 here, then compile and deploy before reading the CCDeg values.
-            // once calibrated wheel offset values are obtained, they
-            // must be entered here before a final compile / deploy. 
+            // Caution! The published CCwd values ((CC wheel direction, in degrees) 
+            // per swerve module as seen on the Shuffleboard SwerveDrive Tab
+            // are corrected to absolute angles within each CANCoder according to 
+            // the specified magnetic offsets entered here. So to change these and use
+            // new readings from the modules (first alligning all 4 wheels to straight
+            // ahead manually) you must first set all offsets to 0 here, then compile
+            // and deploy AND THEN POWER CYCLE before reading the CCDeg values.
+            // Newly written values are not used until a reboot! Once calibrated wheel 
+            // offset values have been obtained, the same process applies: enter them
+            // here, then compile, deploy, and POWER CYCLE once again. After that, 
+            // they should remain stable until a change is needed, e.g., for a 
+            // module replacement. A simpler approach is to use TunerX,  which has
+            // some secret sauce it uses to change the MagnetOffset without a 
+            // power cycle being needed. However, the process is to click on a circle
+            // icon with the wheels oriented straight ahead, and they only report the
+            // offset in rotations. It will always be a negative nummber, because the
+            // cancoder range is [0-1), and that must be negated because the Cancoder
+            // algorithm is to always add the MagnetOffset to the internal raw reading.
+            // Multiply by 360 to get degrees. 
             Rotation2d absOffsetFL = Rotation2d.fromDegrees(-0.86450195 * 360.0);
             Rotation2d absOffsetFR = Rotation2d.fromDegrees(-0.95922851 * 360.0);
             Rotation2d absOffsetBL = Rotation2d.fromDegrees(-0.80126953 * 360.0);
@@ -316,11 +133,11 @@ public final class Constants {
             double steerGearRatio = ((150.0 / 7.0) / 1.0);
             // L2+ Drive Gear Ratio
             double driveL2GearRatio = (5.9 / 1.0);
-            double steerKP = 75;             // was .3 for angles in radians
+            double steerKP = 75;             // TODO - this is likely overkill, but don't really see oscillations.
             double steerKI = 0.0;
             double steerKD = 0.0;
             double steerKF = 0.0;
-            InvertedValue driveMotorInvert = InvertedValue.CounterClockwise_Positive;   // Rebuilt is inverted from Black Knight
+            InvertedValue driveMotorInvert = InvertedValue.CounterClockwise_Positive;
             InvertedValue steerMotorInvert = InvertedValue.Clockwise_Positive;
             SensorDirectionValue canCoderDir = SensorDirectionValue.CounterClockwise_Positive;
             
@@ -348,26 +165,17 @@ public final class Constants {
         
         // Set CHOOSEN_MODULE to just one choosen Robot year static method
         public static final SDS_SwerveUnitParams CHOOSEN_MODULE =  
-                                                    // Uncomment only one module type,
-                                                    // and pass the installed wheel
-                                                    // diameter as an argument
-                                                    // SDSMK4_BLACK_KNIGHT(BILLET_WHEEL_DIA_INCHES);
-                                                    // SDSMK4i_TSUNAMI(COLSON_WHEEL_DIA_INCHES);
-                                                    // SDSMK4i_CRUSH(COLSON_WHEEL_DIA_INCHES);
                                                     // Note: REBUILT uses billet wheels, but with new 
-                                                    // tread the dia is not 4.00" but 3.98". This will
-                                                    // will quickly wear to something closer to COLSON
-                                                    // standard diameter (3.96")
+                                                    // tread the dia is already not 4.00" but 3.98". 
+                                                    // This will wear quickly to something closer to 
+                                                    // the COLSON standard diameter (3.96") so that is
+                                                    // used here.
                                                     SDSMK4i_REBUILT(COLSON_WHEEL_DIA_INCHES);
 
-        // Now use CHOOSEN_MODULE to initialize generically named (and usable)
-        // constants but which are specific to a given module type. 
-        // Note some constants are actually the same between the only two SDS module
-        // types which SRF currently uses, but this approach, originally designed 
-        // to support the declaration of any COTS swerve module, was easier to leave 
-        // mostly intact, especially since with this revision it should be much easier 
-        // to understand for newbie programmers while still teaching a useful 
-        // abstraction technique.
+        // Now use CHOOSEN_MODULE to initialize generically named (and thus universally usable)
+        // constants but which are still specific to the given module type. For 2026 other
+        // robot/module choices were deleted, as we don't have multiple robots simultaneously
+        // active anymore. 
         public static final double WHEEL_DIAMETER_M = CHOOSEN_MODULE.WHEEL_DIAMETER_M;
         public static final double WHEEL_CIRCUMFERENCE_M = CHOOSEN_MODULE.WHEEL_CIRCUMFERENCE_M;
         public static final Translation2d REL_POS2D_FL = CHOOSEN_MODULE.REL_POS2D_FL;
@@ -389,15 +197,23 @@ public final class Constants {
         public static final InvertedValue STEER_MOTOR_INVERT = CHOOSEN_MODULE.STEER_MOTOR_INVERT;
         public static final InvertedValue DRIVE_MOTOR_INVERT = CHOOSEN_MODULE.DRIVE_MOTOR_INVERT;
         public static final SensorDirectionValue CANCODER_DIR = CHOOSEN_MODULE.CANCODER_DIR;
+
         // Set Swerve Kinematics.  The order is always FL, FR, BL, and BR, 
         // referenced to an origin at the center of the robot
         // as evidenced by following the signs of the sequential 
         // Translation2d(x, y) coordinates below:
         public static final SwerveDriveKinematics SWERVE_KINEMATICS = 
-                                new SwerveDriveKinematics(REL_POS2D_FL, REL_POS2D_FR, REL_POS2D_BL, REL_POS2D_BR);
+                                            new SwerveDriveKinematics(REL_POS2D_FL, 
+                                                                      REL_POS2D_FR,
+                                                                      REL_POS2D_BL,
+                                                                      REL_POS2D_BR);
 
         // Swerve Drive Constants which are independent of given modules and chassis:
-        public static final int CANCODER_RANGE = 1; //TODO: AbsoluteSensorDiscontinuityPointValue CANCODER_RANGE = AbsoluteSensorDiscontinuityPointValue.Unsigned_0To1;
+        // AbsoluteSensorDiscontinuityPointValue is apparently not applicable to 
+        // CANCoders with Phoenix6, so the following init is not applicable
+        // (a range of [0, 1) is fixed?
+        // CANCODER_RANGE = AbsoluteSensorDiscontinuityPointValue.Unsigned_0To1;
+        public static final int CANCODER_RANGE = 1; 
 
         // Unit conversion factors. With Phoenix6, the gear ratios are handled by the
         // motor controllers, so that motor.getPosition() values (assuming sensor source is
@@ -406,16 +222,11 @@ public final class Constants {
         // rotational velocity (RPS) to linear velopcity (MPS), is just 
         // the driven wheel circumference.
         public static final double TALONFX_ROT_TO_M_FACTOR = WHEEL_CIRCUMFERENCE_M;
-        public static final double M_TO_TALONFX_ROT_FACTOR = 1.0 / WHEEL_CIRCUMFERENCE_M;
-        public static final double TALONFX_RPS_TO_MPS_FACTOR = WHEEL_CIRCUMFERENCE_M;
         public static final double MPS_TO_TALONFX_RPS_FACTOR = 1.0 / WHEEL_CIRCUMFERENCE_M;
         public static final double ANGLE_TO_ROTATION_FACTOR = 1.0 / 360.0;
-        public static final double FALCON_GEAR_RATIO = 150.0 / 7.0;
 
         // Current Limiting motor protection - same for both module types
         public static final double  DRIVE_SUPPLY_CURRENT_LIMIT          = 60.0;
-        public static final double  DRIVE_SUPPLY_CURRENT_THRESHOLD      = 0.0;
-        public static final double  DRIVE_SUPPLY_CURRENT_TIME_THRESHOLD = 0.1;
         public static final boolean DRIVE_ENABLE_SUPPLY_CURRENT_LIMIT   = true;
         public static final double  DRIVE_STATOR_CURRENT_LIMIT          = 100.0;
         public static final boolean DRIVE_ENABLE_STATOR_CURRENT_LIMIT   = true;

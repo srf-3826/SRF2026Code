@@ -18,7 +18,9 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 // import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.lib.Sensors.GyroIO;
 // import frc.robot.autos.*;
+import frc.robot.Constants.*;
 import frc.robot.commands.*;
 import frc.robot.subsystems.SwerveSubsystem;
 // import frc.robot.subsystems.VisionSubsystem;
@@ -37,7 +39,8 @@ public class RobotContainer {
     private CANBus allElseCanbus = new CANBus(Constants.CAN_BUS_FOR_EVERYTHING_ELSE);
 
     // Declare subsystem object handles
-    private SwerveSubsystem     m_swerveSubsystem;
+    private GyroIO                 m_gyroIO;
+    private SwerveSubsystem        m_swerveSubsystem;
     // private VisionSubsystem     m_visionSubsystem;
     // private LimelightResults    limelight;
     // private Supplier<Pose2d>    m_robotPoseSupplier = ()-> m_swerveSubsystem.getPose();
@@ -55,7 +58,8 @@ public class RobotContainer {
     //  Constructor for the robot container. Contains subsystems, OI devices, and commands.
     public RobotContainer() {
         m_xbox = new CommandXboxController(0);
-        m_swerveSubsystem = new SwerveSubsystem(swerveCanbus);
+        m_gyroIO = new GyroIO(GC.PIGEON_2_CANID, GC.INVERT_GYRO, swerveCanbus);
+        m_swerveSubsystem = new SwerveSubsystem(m_gyroIO, swerveCanbus);
         // m_poseEstimatorSubsystem = new PoseEstimatorSubsystem(limelight, m_swerveSubsystem);
         // m_visionSubsystem = new VisionSubsystem(limelight, m_swerveSubsystem);
         // m_climbSubsystem = new ClimbSubsystem();
@@ -85,6 +89,10 @@ public class RobotContainer {
      **************************************************************/
     public static XboxController getHidXboxCtrl() {
         return m_xbox.getHID();
+    }
+
+    public GyroIO getGyroIO() {
+        return m_gyroIO;
     }
 
     /***********************************************
