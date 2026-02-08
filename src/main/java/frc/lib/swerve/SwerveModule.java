@@ -22,7 +22,6 @@ import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class SwerveModule {
 

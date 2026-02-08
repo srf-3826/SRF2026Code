@@ -146,14 +146,14 @@ public class RobotContainer {
         // The following methods can be used to trigger rotation about any given corner. Most useful when
         // playing defense. Retained here in case a quick change to defense at competition
         // is needed, but normally these button bindings are needed for offense.
-        m_xbox.leftTrigger().onTrue(new InstantCommand(()-> m_swerveSubsystem.setFLCenOfRotation()));
-        m_xbox.leftTrigger().onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
-        m_xbox.rightTrigger().onTrue(new InstantCommand(()-> m_swerveSubsystem.setFRCenOfRotation()));                                        
-        m_xbox.rightTrigger().onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));  
-        //m_xbox.leftBumper().onTrue(new InstantCommand(()-> m_swerveSubsystem.setBLCenOfRotation()));
-        //m_xbox.leftBumper().onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
-        //m_xbox.rightBumper().onTrue(new InstantCommand(()-> m_swerveSubsystem.setBRCenOfRotation()));
-        //m_xbox.rightBumper().onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
+        m_xbox.leftTrigger().and(ALT.negate()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setFLCenOfRotation()));
+        m_xbox.leftTrigger().and(ALT.negate()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
+        m_xbox.rightTrigger().and(ALT.negate()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setFRCenOfRotation()));                                        
+        m_xbox.rightTrigger().and(ALT.negate()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));  
+        ALT.and(m_xbox.leftTrigger()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setBLCenOfRotation()));
+        ALT.and(m_xbox.leftTrigger()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
+        ALT.and(m_xbox.rightTrigger()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setBRCenOfRotation()));
+        ALT.and(m_xbox.rightTrigger()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
         
         // Left and right joystick buttons determine field oriented or robot oriented driving
         m_xbox.leftStick().and(ALT.negate()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setFieldOriented(true)));

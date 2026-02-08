@@ -34,11 +34,13 @@ public final class Constants {
     public static final class F {
         // Formatters to control number of decimal places 
         // in the various published / recorded data
+        public static DecimalFormat df0 = new DecimalFormat("#.");
         public static DecimalFormat df1 = new DecimalFormat("#.#");
         public static DecimalFormat df2 = new DecimalFormat("#.##");
         public static DecimalFormat df3 = new DecimalFormat("#.###");
         public static DecimalFormat df4 = new DecimalFormat("#.####");
         public static DecimalFormat df20 = new DecimalFormat("##");
+        public static DecimalFormat df30 = new DecimalFormat("###");
         public static DecimalFormat df40 = new DecimalFormat("####");
         public static DecimalFormat df80 = new DecimalFormat("########");
     }
@@ -63,7 +65,10 @@ public final class Constants {
                                                         // However, getRotation2d() instead can be used
                                                         // to return angles suited to WPILib
                                                         // conventions, with no gyro inversion.
-
+        public static final int GYRO_LIST_COL = 2;
+        public static final int FIRST_GYRO_LIST_ROW = 0;
+        public static final int GYRO_LIST_HGT = 4;
+ 
         // if NavX, use NavX library to init (no need for an ID), but be sure to
         // set INVERT_GYRO = true; // because NavX measures CCW as negative.
     }
@@ -303,7 +308,7 @@ public final class Constants {
         // individual module components, including the Shuffleboard coordinates
         // embedded in the associated ShuffleboardLayout objects created for each
         // module under the shared "SwerveDrive" Shuffleboard Tab
-        public static final int FIRST_SWERVE_MOD_LIST_COL = 5;
+        public static final int FIRST_SWERVE_MOD_LIST_COL = 4;
         public static final int FIRST_SWERVE_MOD_LIST_ROW = 0;
         public static final int SWERVE_MOD_LIST_HGT = 4;
         public static final ShuffleboardTab sbt = Shuffleboard.getTab("SwerveDrive");
@@ -336,7 +341,7 @@ public final class Constants {
             public static final int steerMotorID = 4;
             public static final int canCoderID   = 2;
             public static final Rotation2d angleOffset = ABS_OFFSET_FR;                             
-                public static final ShuffleboardLayout sBE_Layout1 = 
+            public static final ShuffleboardLayout sBE_Layout1 = 
                                     sbt.getLayout("FL_Mod1", BuiltInLayouts.kGrid)
                                        .withPosition(FIRST_SWERVE_MOD_LIST_COL + 1, 
                                                      FIRST_SWERVE_MOD_LIST_ROW)
