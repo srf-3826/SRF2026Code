@@ -428,8 +428,8 @@ public final class Constants {
     }
 
 
-    //Vision Constants
-    public static final class VC {
+    
+    public static final class VC { //Vision Constants
 
         /**
         * Physical location of the camera on the robot, relative to the center of the robot.        
@@ -449,6 +449,7 @@ public final class Constants {
         public static final double PROCESSOR_HEIGHT = 47.875;
 
         public static final Double OFFSET_3_FT = 3.0;
+        public static final String LIMELIGHT_NAME = "limelight";
 
     }
 }

@@ -1,9 +1,10 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import frc.lib.turret.TurretModule;
 import frc.lib.turret.TurretModuleConstants;
-import frc.lib.geometry.Geometry.Vector3D;
+import edu.wpi.first.math.geometry.Pose3d;
 
 public class TurretSubsystem {
     public TurretModule turretBase = new TurretModule(0, null, null);
@@ -19,38 +20,40 @@ public class TurretSubsystem {
         return new Rotation2d();
     }
 
-    private Vector3D getTurretDimensions()
+    public Pose3d getTurretDimensions()
     {
-        Vector3D turret = new Vector3D(
+        Pose3d turret = new Pose3d(
             TurretModuleConstants.TURRET_HEAD_CAMERA_FORWARD_OFFSET_M,
             TurretModuleConstants.TURRET_HEAD_CAMERA_SIDEWAYS_OFFSET_M,
-            TurretModuleConstants.TURRET_HEAD_CAMERA_HEIGHT_M
+            TurretModuleConstants.TURRET_HEAD_CAMERA_HEIGHT_M,
+            new Rotation3d(
+                0, 
+                getPitch2d().getDegrees(),
+                getYaw2d().getDegrees()
+            )
         );
-        return turret
-            .rotRoll(0)
-            .rotPitch(getPitch2d().getRadians())
-            .rotYaw(getYaw2d().getRadians());
+        return turret;
     }
     
     public double appliedCameraX() 
     {   
-        Vector3D turretDimensions = getTurretDimensions();
+        Pose3d turretDimensions = getTurretDimensions();
         return 
             TurretModuleConstants.TURRET_BASE_FORWARD_OFFSET_M
-            + turretDimensions.x;
+            + turretDimensions.getX();
     }
     public double appliedCameraY()
     {
-        Vector3D turretDimensions = getTurretDimensions();
+        Pose3d turretDimensions = getTurretDimensions();
         return 
             TurretModuleConstants.TURRET_BASE_SIDEWAYS_OFFSET_M
-            + turretDimensions.y;
+            + turretDimensions.getY();
     }
     public double appliedCameraHeight()
     {
-        Vector3D turretDimensions = getTurretDimensions();
+        Pose3d turretDimensions = getTurretDimensions();
         return 
             TurretModuleConstants.TURRET_BASE_HEIGHT_M
-            +turretDimensions.z;
+            +turretDimensions.getZ();
     }
 }
