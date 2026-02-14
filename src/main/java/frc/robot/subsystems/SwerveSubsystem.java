@@ -69,7 +69,7 @@ public class SwerveSubsystem extends SubsystemBase {
     // Magic numbers ahead (publishing interval of 10 hz, and out of phasefactor). May want to move to
     // constants.java. Swerve modules will publish at the same rate as SwerveSubsystem, but out of 
     // phase by half the interval. 
-    private static final double PUBLISH_INTERVAL = 0.1;
+    private static final double PUBLISH_INTERVAL = 0.01;            // Was .1, changed to Temporarily publish every loop
     private double              m_lastSwerveSubsystemPubTime = 0.0;
     private double              m_lastSwerveModulesPubTime = PUBLISH_INTERVAL / 2.0;
       
@@ -178,6 +178,9 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public void setFieldOriented( boolean fieldOrientedSetting ) {
         m_isFieldOriented = fieldOrientedSetting;
+        // to reset the max vel and accel data, just change to either robot or field oriented. 
+        // Then switch back to leave current field oriented setting unchanged 
+        m_motionEstimator.resetMax();
     }
 
     public void setVarMaxOutputFactor(double maxOutputFactor) {
@@ -314,25 +317,25 @@ public class SwerveSubsystem extends SubsystemBase {
                 // Initalize a column holding units for the adjacent Swerve Module Data Columns
                 ShuffleboardLayout s2 =  sbt.getLayout("Units", BuiltInLayouts.kGrid)
                                             .withPosition(SDC.FIRST_SWERVE_MOD_LIST_COL + 4, 0)
-                                            .withSize(1, SDC.SWERVE_MOD_LIST_HGT)
-                                            .withProperties(Map.of("Number of Columns", 1,
+                                            .withSize(2, SDC.SWERVE_MOD_LIST_HGT)
+                                            .withProperties(Map.of("Number of Columns", 2,
                                                                     "Number of Rows", 12, 
                                                                     "Label position", "RIGHT"));
                 // No need to cache the entries here - they only get written once in this setup method
                 // Titles must be unique within this grid widget. Use variable len strings composed of
                 // zero width non visible spaces. Default values are strings with the correct digits for 
                 // adjacent Swerve Module data sets.
-                s2.add(" "+makeInvisibleTitleOfLen(0), "DM SM CC")
+                s2.add(" "+makeInvisibleTitleOfLen(0), "DM  SM  CC")
                   .withPosition(0, 0);
-                s2.add(" "+makeInvisibleTitleOfLen(1), "Deg")
+                s2.add(" "+makeInvisibleTitleOfLen(1), "Deg - offsets")
                   .withPosition(0, 1);
-                s2.add(" "+makeInvisibleTitleOfLen(2), "Deg")
+                s2.add(" "+makeInvisibleTitleOfLen(2), "Deg - CC enc")
                   .withPosition(0, 2);
-                s2.add(" "+makeInvisibleTitleOfLen(3), "Deg")
+                s2.add(" "+makeInvisibleTitleOfLen(3), "Deg - SM enc")
                   .withPosition(0, 3);
-                s2.add(" "+makeInvisibleTitleOfLen(4), "Deg")
+                s2.add(" "+makeInvisibleTitleOfLen(4), "Deg - Setpoint")
                   .withPosition(0, 4);
-                s2.add(" "+makeInvisibleTitleOfLen(5), "SM PIDout")
+                s2.add(" "+makeInvisibleTitleOfLen(5), "SM - PID out")
                   .withPosition(0, 5);
                 s2.add(" "+makeInvisibleTitleOfLen(6), "Amps")
                   .withPosition(0, 6);
@@ -381,7 +384,6 @@ public class SwerveSubsystem extends SubsystemBase {
         m_maxAngVelEntry.setString(F.df2.format(m_motionEstimator.getMaxAngularVelocity())); 
         m_maxAccelEntry.setString(F.df2.format(m_motionEstimator.getMaxAcceleration())); 
         m_maxAngAccelEntry.setString(F.df2.format(m_motionEstimator.getMaxAngularAcceleration())); 
-
     }
 
     /*
@@ -401,12 +403,13 @@ public class SwerveSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         m_now = Timer.getFPGATimestamp();
-        m_currentHeading2d = getYaw2d();
+        m_currentHeading2d = getYaw2d();            // cache the current gyro heading
 
         if (RobotState.isEnabled()) {
             m_swerveOdometry.update(m_currentHeading2d, getModulePositions()); 
             m_motionEstimator.update(m_swerveOdometry.getPoseMeters());
         }
+    
         // Allow SwerveModules to all refresh their StatusSignals
         for(SwerveModule mod : m_swerveMods) {
             mod.update();

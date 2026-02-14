@@ -72,17 +72,19 @@ public class GyroIO {
 
     // The following configures the gyro, ensures it is zeroed, and optimizesBusUtilization.
 
-    private void configPigeon2Gyro() {
+    private boolean configPigeon2Gyro() {
       // Apply configuration (optional but recommended)
         Pigeon2Configuration p2Config = new Pigeon2Configuration();
         // Add any special Pigeon2 config here if needed
         StatusCode code = m_gyro.getConfigurator().apply(p2Config);
         if (! code.isOK()) {
             System.out.println("Pigeon2 config error: " + code.getDescription());
+            return false;
         }
 
         zeroGyro();
         m_gyro.optimizeBusUtilization();
+        return(true);
     }
 
     //
@@ -101,13 +103,12 @@ public class GyroIO {
         // During startup period: never refresh
         if (m_now - m_startupTime < INITIALIZATION_QUIET_TIME) {
             // For the first INITIALIZATION_QUIET_TIME seconds, suppress error messages from
-            // the Pigeon2 by ensuring no refresch calls are made during this time.
-            // Apparently only the refresh() or refreshAll() methods trigger error messages.
+            // the Pigeon2 by ensuring no gyro calls are made during this time.
             // This will help keep the startup console quieter, hopefully.
             return; 
         }
 
-        // With quiet time compleete, check if init has been done. If not, do it now
+        // With quiet time compleete, check if init has been done yet. If not, do it now
         if (! m_isInitialized) {
             // Create all signals then config the gyro and clear the init flag
             m_yawSignal  = m_gyro.getYaw();
@@ -122,32 +123,48 @@ public class GyroIO {
             m_gravityYSignal  = m_gyro.getGravityVectorY();
             m_gravityZSignal  = m_gyro.getGravityVectorZ();
             m_gyroTempSignal = m_gyro.getTemperature();
-            configPigeon2Gyro();
-            m_isInitialized = true;
+            if (m_yawSignal == null || m_pitchSignal == null || m_rollSignal == null ||
+                m_accelXSignal == null || m_accelYSignal == null || m_accelZSignal == null ||
+                m_angVelZDeviceSignal == null || m_angVelZWorldSignal == null ||
+                m_gravityXSignal == null || m_gravityYSignal == null ||
+                m_gravityZSignal == null || m_gyroTempSignal == null) {
+                System.out.println("Failed to initialize Signals !!!");
+            } else {
+                if (configPigeon2Gyro()) {      // Returns true if statusCode == IS_OK
+                   m_isInitialized = true;
+                };
+            }
+            return;
         }
         
-        // At this point Pigeon2 hardware initialization has been done.
+        // If this point is reached, Pigeon2 initialization has been done.
         // Go ahead and start / continue refreshing, and report any errors.
         StatusCode code = BaseStatusSignal.refreshAll( m_yawSignal, m_pitchSignal, m_rollSignal,
                                                        m_accelXSignal, m_accelYSignal, m_accelZSignal,
                                                        m_angVelZDeviceSignal, m_angVelZWorldSignal,
                                                        m_gravityXSignal, m_gravityYSignal, m_gravityZSignal,
-                                                       m_gyroTempSignal
-                                                     );
+                                                       m_gyroTempSignal);
         // And do normal runtime error reporting, if appropriate
         if ( !code.isOK() ) {
-            System.out.println("Pigeon2 runtime error @: "+m_now+"   "+code.getName());
+            System.out.println("GyroIO runtime error @ ~line 149. Time: "+m_now+"   "+code.getName());
         }
         publishGyroData();
     }   
 
     // ------------------ Getters ------------------
-    // If called before initialization is complete, they generall 
-    // return either 0 (probably what we want to initialize mechanisms
-    // with)), or the last data value cached.
+    // If called before initialization is complete, most getters rely on StatusSignals 
+    // that are still null. Currently the only likely subsystem to start calling into 
+    // gryoIO before init is complete is SwerveSubsystem, specifically getYawDegrees(). 
+    // So test and just return 0 if that StatusSignal is null. (probably what we want 
+    // to initialize Yaw with). NOTE: Will need to do the same with other signals if 
+    // called by new mechanism subsystems early.
 
     public double getYawDegrees() {
-        return MathUtil.inputModulus(m_yawSignal.getValueAsDouble(), -180.0, 180.0);
+        if (m_yawSignal != null) {
+            return MathUtil.inputModulus(m_yawSignal.getValueAsDouble(), -180.0, 180.0);
+        } else {
+            return 0.0;
+        }
     }
 
     public double getPitchDegrees() {
@@ -196,23 +213,23 @@ public class GyroIO {
     }
 
     public Rotation2d getRotation2d() {
-        return Rotation2d.fromDegrees(0.0);     //getYawDegrees());
+        return Rotation2d.fromDegrees(getYawDegrees());
         // Might be possible to do a direct Rotation2d fetch: return m_gyro.getRotation2d();
         // but it is not clear how efficient that would be wrt canbus
         // optimiztion and refreshing
     }
 
     public Rotation3d getRotation3d() {
-        return new Rotation3d(
-            Math.toRadians(0.0),         //getRollDegrees()),
-            Math.toRadians(0.0),         //getPitchDegrees()),
-            Math.toRadians(0.0)         //getYawDegrees())
-        );
+        return new Rotation3d(Math.toRadians(getRollDegrees()),
+                              Math.toRadians(getPitchDegrees()),
+                              Math.toRadians(getYawDegrees()));
     }
 
     /*
      * Setup Gyro Data Publishing
      */
+    // TODO: drop Gravity vector publishing. Replace with max horiz acceleration (calulated from X and Y accel),
+    // max angular velocity, and max ang acceleration (calculated from derivative of angVel)
     private void setupGyroDataPublishing() {
         ShuffleboardTab sbt = Shuffleboard.getTab("SwerveDrive");
         if (sbt == null) {
@@ -243,7 +260,7 @@ public class GyroIO {
      * Publish Gyro Data
      */
     private void publishGyroData() {
-        if (m_now - m_lastPubTime < PUBLISH_INTERVAL) return;
+        if ((m_now - m_lastPubTime) < PUBLISH_INTERVAL) return;
         m_lastPubTime = m_now;
 
         m_yawEntry.setString(F.df1.format(getYawDegrees()));
