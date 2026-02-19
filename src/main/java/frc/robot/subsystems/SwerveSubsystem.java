@@ -372,6 +372,7 @@ public class SwerveSubsystem extends SubsystemBase {
         // doing this should avoid making CAN bus data requests too frequently for
         // the Pigeon2 to keep up.
         m_isFieldOrientedEntry.setString(m_isFieldOriented ? "Yes" : "No");
+        // TODO - insert UI Mode display here, drop display of AngVelOdom and AngAccelOdom. Add linear accel
         m_location2d = getPose();
         m_odometryPoseXEntry.setString(F.df2.format(m_location2d.getX()));
         m_odometryPoseYEntry.setString(F.df2.format(m_location2d.getY()));           
@@ -379,11 +380,11 @@ public class SwerveSubsystem extends SubsystemBase {
         m_cenOfRotEntry.setString(m_cenRotIdString);
         m_maxOutputFactorEntry.setString(F.df2.format(m_varMaxOutputFactor * m_fixedMaxTranslationOutput));
         m_odometrySpeedEntry.setString(F.df2.format(m_motionEstimator.getVelocity()));
-        m_odometryAngVelEntry.setString(F.df2.format(m_motionEstimator.getAngularVelocity())); 
+        m_odometryAngVelEntry.setString(F.df2.format(m_motionEstimator.getAngVelOdom())); 
         m_maxSpeedEntry.setString(F.df2.format(m_motionEstimator.getMaxVelocity())); 
-        m_maxAngVelEntry.setString(F.df2.format(m_motionEstimator.getMaxAngularVelocity())); 
+        m_maxAngVelEntry.setString(F.df2.format(m_motionEstimator.getMaxAngVelOdom())); 
         m_maxAccelEntry.setString(F.df2.format(m_motionEstimator.getMaxAcceleration())); 
-        m_maxAngAccelEntry.setString(F.df2.format(m_motionEstimator.getMaxAngularAcceleration())); 
+        m_maxAngAccelEntry.setString(F.df2.format(m_motionEstimator.getMaxAngAccelOdom())); 
     }
 
     /*
@@ -407,7 +408,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
         if (RobotState.isEnabled()) {
             m_swerveOdometry.update(m_currentHeading2d, getModulePositions()); 
-            m_motionEstimator.update(m_swerveOdometry.getPoseMeters());
+            m_motionEstimator.update(m_swerveOdometry.getPoseMeters(), m_currentHeading2d);
         }
     
         // Allow SwerveModules to all refresh their StatusSignals
