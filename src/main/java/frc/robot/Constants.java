@@ -6,7 +6,7 @@ import java.util.Map;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
-
+import static edu.wpi.first.units.Units.Inches;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
@@ -15,6 +15,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
@@ -427,7 +428,91 @@ public final class Constants {
         public static final double AUTO_ACCEL_FACTOR_GENERIC = 1.0;
     }
 
+    public static final class ISC { //Intake Constants
+            public static final int INTAKE_PIVOT_MOTOR_ID = 10;
 
+             public static final double PIVOT_GEAR_RATIO = 3*9*32/12;
+             public static final double PIVOT_GEAR_RATIO_INVERTED = 1/PIVOT_GEAR_RATIO;
+
+             public static final double PIVOT_MOTOR_KP = 18;
+             public static final double PIVOT_MOTOR_KI = 1.600000023841858;
+             public static final double PIVOT_MOTOR_KD = 0;
+             public static final double PIVOT_MOTOR_KS = 0.01953125;
+             public static final double PIVOT_MOTOR_KA = 3;
+             public static final double PIVOT_MOTOR_KV = 4.5;
+             public static final double PIVOT_MOTOR_KG = -0.400390625;
+
+             public static final int PIVOT_OUTPUT_MOTOR_LIMIT_FACTOR = 1;
+
+             public static final NeutralModeValue PIVOT_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
+             public static final InvertedValue PIVOT_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
+
+             public static final double PIVOT_OPEN_LOOP_RAMP_PERIOD = 1.0;
+             public static final double PIVOT_CLOSED_LOOP_RAMP_PERIOD = 0.0;
+
+             public static final boolean PIVOT_ENABLE_SUPPLY_CURRENT_LIMIT = true;
+             public static final double PIVOT_MOTOR_SUPPLY_CURRENT_LIMIT = 35.0;
+             public static final boolean PIVOT_ENABLE_STATOR_CURRENT_LIMIT = true;
+            public static final double PIVOT_STATOR_CURRENT_LIMIT = 60.0;    
+        
+
+            public static final int INTAKE_ROLLER_MOTOR_ID = 11; //TODO: Need to test out a PID for the intake rollers to fill in the data
+            
+             public static final double ROLLER_GEAR_RATIO = 9;
+             public static final double ROLLER_GEAR_RATIO_INVERTED = 1/ROLLER_GEAR_RATIO;
+
+             public static final double ROLLER_MOTOR_KP = 0;
+             public static final double ROLLER_MOTOR_KI = 0;
+             public static final double ROLLER_MOTOR_KD = 0;
+             public static final double ROLLER_MOTOR_KS = 0;
+             public static final double ROLLER_MOTOR_KA = 0;
+             public static final double ROLLER_MOTOR_KV = 0;
+             public static final double ROLLER_MOTOR_KG = 0;
+
+             public static final int ROLLER_OUTPUT_MOTOR_LIMIT_FACTOR = 1;
+
+             public static final NeutralModeValue ROLLER_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
+             public static final InvertedValue ROLLER_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
+
+             public static final double ROLLER_OPEN_LOOP_RAMP_PERIOD = 1.0;
+             public static final double ROLLER_CLOSED_LOOP_RAMP_PERIOD = 0.0;
+
+             public static final boolean ROLLER_ENABLE_SUPPLY_CURRENT_LIMIT = true;
+             public static final double ROLLER_MOTOR_SUPPLY_CURRENT_LIMIT = 0.0;
+             public static final boolean ROLLER_ENABLE_STATOR_CURRENT_LIMIT = true;
+            public static final double ROLLER_STATOR_CURRENT_LIMIT = 0.0;
+
+    
+            public static final int HOPPER_FLOOR_MOTOR_ID = 12; //TODO: Can likely just use DutyCycleOut for the hopper but still needs to be tested
+             public static final int HOPPER_GEAR_RATIO = 3;
+             public static final double HOPPER_GEAR_RATIO_INVERTED = 1/HOPPER_GEAR_RATIO;
+
+             public static final double HOPPER_MOTOR_KP = 0;
+             public static final double HOPPER_MOTOR_KI = 0;
+             public static final double HOPPER_MOTOR_KD = 0;
+             public static final double HOPPER_MOTOR_KS = 0;
+             public static final double HOPPER_MOTOR_KA = 0;
+             public static final double HOPPER_MOTOR_KV = 0;
+             public static final double HOPPER_MOTOR_KG = 0;
+
+             public static final int HOPPER_OUTPUT_MOTOR_LIMIT_FACTOR = 1;
+
+             public static final NeutralModeValue HOPPER_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
+             public static final InvertedValue HOPPER_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
+
+             public static final double HOPPER_OPEN_LOOP_RAMP_PERIOD = 1.0;
+             public static final double HOPPER_CLOSED_LOOP_RAMP_PERIOD = 0.0;
+
+             public static final boolean HOPPER_ENABLE_SUPPLY_CURRENT_LIMIT = true;
+             public static final double HOPPER_MOTOR_SUPPLY_CURRENT_LIMIT = 0.0;
+             public static final boolean HOPPER_ENABLE_STATOR_CURRENT_LIMIT = true;
+            public static final double HOPPER_STATOR_CURRENT_LIMIT = 0.0;
+
+
+            public static final int ARM_ENCODER_ID = 13; //TODO: Need to grab the data off Tuner X for the offset and discontinuity point
+             public static final double ARM_ENCODER_MAGNET_OFFSET = 0.079833984375;
+             public static final double ARM_ABSOLUTE_SENSOR_DISCONTINUITY_POINT = 0.275146484375;
+    }
     
     public static final class VC { //Vision Constants
 
