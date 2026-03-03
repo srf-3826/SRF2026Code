@@ -13,6 +13,8 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusCode;
+
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeSubsystem extends SubsystemBase {
@@ -23,13 +25,15 @@ private CANcoder m_encoder;
 private CANBus m_intakeBus;
 private VelocityVoltage m_control_roller;
 private PositionVoltage m_control_pivot;
+
+double arm_target_angle = 0;
         
     IntakeSubsystem(CANBus intakeBus) {
         m_intakeBus = intakeBus;
-        TalonFX m_arm = new TalonFX(ISC.INTAKE_PIVOT_MOTOR_ID, intakeBus);
-        TalonFXS m_rollers = new TalonFXS(ISC.INTAKE_ROLLER_MOTOR_ID, intakeBus);
-        TalonFXS m_hopper = new TalonFXS(ISC.HOPPER_FLOOR_MOTOR_ID, intakeBus);
-        CANcoder m_encoder = new CANcoder(ISC.ARM_ENCODER_ID, intakeBus);
+        m_arm = new TalonFX(ISC.INTAKE_PIVOT_MOTOR_ID, intakeBus);
+        m_rollers = new TalonFXS(ISC.INTAKE_ROLLER_MOTOR_ID, intakeBus);
+        m_hopper = new TalonFXS(ISC.HOPPER_FLOOR_MOTOR_ID, intakeBus);
+        m_encoder = new CANcoder(ISC.ARM_ENCODER_ID, intakeBus);
         configPivotMotor();
         configHopperMotor();
         configRollerMotor();
@@ -37,28 +41,30 @@ private PositionVoltage m_control_pivot;
     }
 
     @Override public void periodic() {
-            IntakeChassis.execute();
+            chassis_at_setpoint();
             IntakeRollers.execute();
             HopperRollers.execute();
         }
 
-    public class IntakeChassis {
-        public static void setup() {
-
-        }
-        public static void execute() {
-
-        }
-        public static void gotoRetract() {
-
-        }
-        public static void gotoFloorPickup() {
-
-        }
-        public static void gotoIdle() {
-
-        }
+    public void chassis_at_setpoint() {
+        StatusSignal<Angle> angle_signal = m_arm.getRotorPosition(true);
+        double angle = angle_signal.getValueAsDouble();
+        // TODO: finish this
+        
     }
+    public void chassis_gotoRetract() {
+        MotionMagicVoltage request = new MotionMagicVoltage(0);
+        m_arm.setControl(request.withPosition(ISC.CHASSIS_RETRACT_ANGLE));
+    }
+    public void chassis_gotoFloorPickup() {
+        MotionMagicVoltage request = new MotionMagicVoltage(0);
+        m_arm.setControl(request.withPosition(ISC.CHASSIS_FLOOR_ANGLE));
+    }
+    public void chassis_gotoCruise() {
+        MotionMagicVoltage request = new MotionMagicVoltage(0);
+        m_arm.setControl(request.withPosition(ISC.CHASSIS_CRUISE_ANGLE));
+    }
+    
     public class IntakeRollers {
         public static void setup() {
             

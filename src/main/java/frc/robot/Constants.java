@@ -15,6 +15,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -512,6 +513,11 @@ public final class Constants {
             public static final int ARM_ENCODER_ID = 13; //TODO: Need to grab the data off Tuner X for the offset and discontinuity point
              public static final double ARM_ENCODER_MAGNET_OFFSET = 0.079833984375;
              public static final double ARM_ABSOLUTE_SENSOR_DISCONTINUITY_POINT = 0.275146484375;
+
+
+            public static final double CHASSIS_FLOOR_ANGLE = 0; // TODO: Measure encoder angle at pickup position
+            public static final double CHASSIS_RETRACT_ANGLE = 0; // TODO: Measure encoder angle at full retraction
+            public static final double CHASSIS_CRUISE_ANGLE = 0; // TODO: measure encoder angle at the cruising midpoint (just in front of hopper)
     }
     
     public static final class VC { //Vision Constants
