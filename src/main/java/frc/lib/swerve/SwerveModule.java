@@ -425,6 +425,7 @@ public class SwerveModule {
      }
 
     public void publishModuleData() {
+        // Filtering to reduce publish frequency is done by the caller: SwerveSubsystem
         absCANcoderDegEntry.setString(F.df1.format(getCANcoderDeg()));
         steerEncoderDegEntry.setString(F.df1.format(m_steerPosSignal.degrees()));
         steerSetpointDegEntry.setString(F.df1.format(m_lastAngleDeg));
