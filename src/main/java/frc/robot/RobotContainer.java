@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 // import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.lib.Sensors.GyroIO;
+import frc.lib.sensors.GyroIO;
 // import frc.robot.autos.*;
 import frc.robot.Constants.*;
 import frc.robot.commands.*;
@@ -35,7 +35,6 @@ import frc.robot.subsystems.SwerveSubsystem;
  */
 public class RobotContainer {
     private CANBus swerveCanbus = new CANBus(Constants.CAN_BUS_FOR_SWERVE);
-    private CANBus turretCanbus = new CANBus(Constants.CAN_BUS_FOR_TURRET);
     private CANBus allElseCanbus = new CANBus(Constants.CAN_BUS_FOR_EVERYTHING_ELSE);
 
     // Declare subsystem object handles
