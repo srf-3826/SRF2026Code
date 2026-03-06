@@ -40,64 +40,44 @@ double arm_target_angle = 0;
         configArmEncoder();
     }
 
-    @Override public void periodic() {
-            chassis_at_setpoint();
-            IntakeRollers.execute();
-            HopperRollers.execute();
-        }
-
-    public void chassis_at_setpoint() {
-        StatusSignal<Angle> angle_signal = m_arm.getRotorPosition(true);
-        double angle = angle_signal.getValueAsDouble();
-        // TODO: finish this
-        
-    }
-    public void chassis_gotoRetract() {
+    public void arm_gotoRetract() {
         MotionMagicVoltage request = new MotionMagicVoltage(0);
-        m_arm.setControl(request.withPosition(ISC.CHASSIS_RETRACT_ANGLE));
+        m_arm.setControl(request.withPosition(ISC.PIVOT_MOTOR_RETRACT_ANGLE));
     }
-    public void chassis_gotoFloorPickup() {
+    public void arm_gotoFloorPickup() {
         MotionMagicVoltage request = new MotionMagicVoltage(0);
-        m_arm.setControl(request.withPosition(ISC.CHASSIS_FLOOR_ANGLE));
+        m_arm.setControl(request.withPosition(ISC.PIVOT_MOTOR_FLOOR_ANGLE));
     }
-    public void chassis_gotoCruise() {
+    public void arm_gotoHold() {
         MotionMagicVoltage request = new MotionMagicVoltage(0);
-        m_arm.setControl(request.withPosition(ISC.CHASSIS_CRUISE_ANGLE));
+        m_arm.setControl(request.withPosition(ISC.PIVOT_MOTOR_HOLD_ANGLE));
     }
     
-    public class IntakeRollers {
-        public static void setup() {
-            
-        }
-        public static void execute() {
-
-        }
-        public static void expelFuel() {
-
-        }
-        public static void halt() {
-
-        }
-        public static void intakeFuel() {
-
-        }
+   
+    public void intake_ExpelFuel() {
+        MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
+        m_rollers.setControl(request.withVelocity(-ISC.ROLLER_SPEED));
     }
-    public class HopperRollers {
-        public static void setup() {
-            
-        }
-        public static void execute() {
-
-        }
-        public static void expelFuel() {
-
-        }
-        public static void halt() {
-
-        }
-        public static void alignFuelToShoot() {
-
-        }
+    public void intake_Halt() {
+        MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
+        m_rollers.setControl(request.withVelocity(0));
+    }
+    public void intake_IntakeFuel() {
+        MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
+        m_rollers.setControl(request.withVelocity(ISC.ROLLER_SPEED));
+    }
+    
+    public void hopper_ExpelFuel() {
+    MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
+        m_rollers.setControl(request.withVelocity(-ISC.HOPPER_SPEED));
+    }
+    public void hopper_Halt() {
+        MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
+        m_rollers.setControl(request.withVelocity(0));
+    }
+    public void hopper_AlignFuelToShoot() {
+        MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
+        m_rollers.setControl(request.withVelocity(ISC.HOPPER_SPEED));
     }
 
     private void configPivotMotor() {
@@ -135,6 +115,9 @@ double arm_target_angle = 0;
                                                         .withOpenLoopRamps(openLoopConfig)
                                                         .withClosedLoopRamps(closedLoopConfig)
                                                         .withSlot0(pid0Configs);
+        IntakeArmConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.PIVOT_MOTOR_MAX_VEL;
+        IntakeArmConfig.MotionMagic.MotionMagicAcceleration = ISC.PIVOT_MOTOR_ACCEL;
+        IntakeArmConfig.MotionMagic.MotionMagicJerk = ISC.PIVOT_MOTOR_JERK;
 
         StatusCode status = m_arm.getConfigurator().apply(IntakeArmConfig);
 
@@ -173,6 +156,9 @@ double arm_target_angle = 0;
                                                           .withOpenLoopRamps(openLoopConfig)
                                                           .withClosedLoopRamps(closedLoopConfig)
                                                           .withSlot0(pid0Configs);
+        IntakeRollersConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.ROLLER_MOTOR_MAX_VEL;
+        IntakeRollersConfig.MotionMagic.MotionMagicAcceleration = ISC.ROLLER_MOTOR_ACCEL;
+        IntakeRollersConfig.MotionMagic.MotionMagicJerk = ISC.ROLLER_MOTOR_JERK;
 
         StatusCode status = m_rollers.getConfigurator().apply(IntakeRollersConfig);
 
@@ -211,6 +197,9 @@ double arm_target_angle = 0;
                                                            .withOpenLoopRamps(openLoopConfig)
                                                            .withClosedLoopRamps(closedLoopConfig)
                                                            .withSlot0(pid0Configs);
+        HopperFloorConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.HOPPER_MOTOR_MAX_VEL;
+        HopperFloorConfig.MotionMagic.MotionMagicAcceleration = ISC.HOPPER_MOTOR_ACCEL;
+        HopperFloorConfig.MotionMagic.MotionMagicJerk = ISC.HOPPER_MOTOR_JERK;
 
         StatusCode status = m_hopper.getConfigurator().apply(HopperFloorConfig);
 

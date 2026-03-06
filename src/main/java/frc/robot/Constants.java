@@ -16,6 +16,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -215,7 +216,7 @@ public final class Constants {
                                                                       REL_POS2D_BL,
                                                                       REL_POS2D_BR);
 
-        // Swerve Drive Constants which are independent of given modules and chassis:
+        // Swerve Drive Constants which are independent of given modules and PIVOT_MOTOR:
         // AbsoluteSensorDiscontinuityPointValue is apparently not applicable to 
         // CANCoders with Phoenix6, so the following init is not applicable
         // (a range of [0, 1) is fixed?
@@ -443,6 +444,13 @@ public final class Constants {
              public static final double PIVOT_MOTOR_KV = 4.5;
              public static final double PIVOT_MOTOR_KG = -0.400390625;
 
+             // TODO: i picked safe values for this, but they are probably not optimal.
+             public static final double PIVOT_MOTOR_MAX_VEL = 0.1; 
+             public static final double PIVOT_MOTOR_ACCEL = 0.05;
+
+            // I dont think we need this, diminishing returns on smoothness
+             public static final double PIVOT_MOTOR_JERK = 0;
+
              public static final int PIVOT_OUTPUT_MOTOR_LIMIT_FACTOR = 1;
 
              public static final NeutralModeValue PIVOT_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
@@ -515,9 +523,23 @@ public final class Constants {
              public static final double ARM_ABSOLUTE_SENSOR_DISCONTINUITY_POINT = 0.275146484375;
 
 
-            public static final double CHASSIS_FLOOR_ANGLE = 0; // TODO: Measure encoder angle at pickup position
-            public static final double CHASSIS_RETRACT_ANGLE = 0; // TODO: Measure encoder angle at full retraction
-            public static final double CHASSIS_CRUISE_ANGLE = 0; // TODO: measure encoder angle at the cruising midpoint (just in front of hopper)
+            public static final double PIVOT_MOTOR_FLOOR_ANGLE = 0; // TODO: Measure encoder angle at pickup position
+            public static final double PIVOT_MOTOR_RETRACT_ANGLE = 0; // TODO: Measure encoder angle at full retraction
+            public static final double PIVOT_MOTOR_HOLD_ANGLE = 0; // TODO: measure encoder angle at the cruising midpoint (just in front of hopper)
+
+            public static final double ROLLER_SPEED = 3; // TODO: dial this in
+
+            public static final double HOPPER_SPEED = 3; // TODO: dial this in
+
+            public static final double HOPPER_MOTOR_MAX_VEL = 10;
+            public static final double HOPPER_MOTOR_ACCEL = 10;
+            public static final double HOPPER_MOTOR_JERK = 0;
+
+            public static final double ROLLER_MOTOR_MAX_VEL = 10;
+            public static final double ROLLER_MOTOR_ACCEL = 10;
+            public static final double ROLLER_MOTOR_JERK = 0;
+
+            
     }
     
     public static final class VC { //Vision Constants
