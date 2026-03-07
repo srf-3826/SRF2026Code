@@ -4,7 +4,11 @@ import java.text.DecimalFormat;
 import java.util.Map;
 
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
+import com.ctre.phoenix6.signals.BrushedMotorWiringValue;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
+import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import static edu.wpi.first.units.Units.Inches;
@@ -494,6 +498,9 @@ public final class Constants {
              public static final boolean ROLLER_ENABLE_STATOR_CURRENT_LIMIT = true;
             public static final double ROLLER_STATOR_CURRENT_LIMIT = 0.0;
 
+            public static final AdvancedHallSupportValue ROLLER_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
+            public static final MotorArrangementValue ROLLER_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.Minion_JST;
+
     
             public static final int HOPPER_FLOOR_MOTOR_ID = 12; //TODO: Can likely just use DutyCycleOut for the hopper but still needs to be tested
              public static final int HOPPER_GEAR_RATIO = 3;
@@ -520,6 +527,8 @@ public final class Constants {
              public static final boolean HOPPER_ENABLE_STATOR_CURRENT_LIMIT = true;
             public static final double HOPPER_STATOR_CURRENT_LIMIT = 0.0;
 
+            public static final AdvancedHallSupportValue HOPPER_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
+            public static final MotorArrangementValue HOPPER_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.NEO_JST;
 
             public static final int ARM_ENCODER_ID = 13; //TODO: Need to grab the data off Tuner X for the offset and discontinuity point
              public static final double ARM_ENCODER_MAGNET_OFFSET = 0.079833984375;
@@ -550,11 +559,11 @@ public final class Constants {
         public static final double FLY_OPEN_LOOP_RAMP_PERIOD = 0;
         public static final double FLY_CLOSED_LOOP_RAMP_PERIOD = 0;
 
-        public static final InvertedValue FLY_RIGHT_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive; // TODO: test both
+        public static final InvertedValue FLY_RIGHT_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
         public static final InvertedValue FLY_LEFT_MOTOR_INVERT = InvertedValue.Clockwise_Positive;
         
-        public static final int LEFT_ENCODER_ID = 20;
-        public static final int RIGHT_ENCODER_ID = 21;
+        public static final int LEFT_SHOOTER_MOTOR_ID = 20;
+        public static final int RIGHT_SHOOTER_MOTOR_ID = 21;
 
         public static final double FLY_GEAR_RATIO = 1;
 
@@ -579,6 +588,36 @@ public final class Constants {
         public static final double FLY_MOTOR_MAX_VEL = 50;
         public static final double FLY_MOTOR_ACCEL = FLY_MOTOR_MAX_VEL/2;
         public static final double FLY_MOTOR_JERK = 0;
+
+        public static final int LEFT_FEED_MOTOR_ID = 22;
+        public static final int RIGHT_FEED_MOTOR_ID = 23;
+            
+            public static final AdvancedHallSupportValue FEED_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
+            public static final MotorArrangementValue FEED_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.NEO550_JST;
+             public static final double FEED_GEAR_RATIO = 10;
+             public static final double FEED_GEAR_RATIO_INVERTED = 1/FEED_GEAR_RATIO;
+
+             public static final double FEED_MOTOR_KP = 1;
+             public static final double FEED_MOTOR_KI = 0;
+             public static final double FEED_MOTOR_KD = 0;
+             public static final double FEED_MOTOR_KS = 0;
+             public static final double FEED_MOTOR_KA = 0;
+             public static final double FEED_MOTOR_KV = 0;
+             public static final double FEED_MOTOR_KG = 0;
+
+             public static final int FEED_OUTPUT_MOTOR_LIMIT_FACTOR = 1;
+
+             public static final NeutralModeValue FEED_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
+             public static final InvertedValue LEFT_FEED_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
+             public static final InvertedValue RIGHT_FEED_MOTOR_INVERT = InvertedValue.Clockwise_Positive;
+
+             public static final double FEED_OPEN_LOOP_RAMP_PERIOD = 1.0;
+             public static final double FEED_CLOSED_LOOP_RAMP_PERIOD = 0.0;
+             public static final boolean FEED_ENABLE_SUPPLY_CURRENT_LIMIT = true;
+             public static final double FEED_MOTOR_SUPPLY_CURRENT_LIMIT = 0.0;
+             public static final boolean FEED_ENABLE_STATOR_CURRENT_LIMIT = true;
+            public static final double FEED_STATOR_CURRENT_LIMIT = 0.0;
+
     }
     
     public static final class VC { //Vision Constants

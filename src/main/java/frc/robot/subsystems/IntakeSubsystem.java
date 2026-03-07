@@ -3,8 +3,10 @@ package frc.robot.subsystems;
 import com.ctre.phoenix6.hardware.TalonFXS;
 import frc.robot.Constants.*;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.GravityTypeValue;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.configs.*;
@@ -39,7 +41,7 @@ double arm_target_angle = 0;
         configRollerMotor();
         configArmEncoder();
     }
-
+//TODO: Change the MotionMagicVoltage PIDs over to PositionVoltage PIDs for the Arm.
     public void arm_gotoRetract() {
         MotionMagicVoltage request = new MotionMagicVoltage(0);
         m_arm.setControl(request.withPosition(ISC.PIVOT_MOTOR_RETRACT_ANGLE));
@@ -115,9 +117,11 @@ double arm_target_angle = 0;
                                                         .withOpenLoopRamps(openLoopConfig)
                                                         .withClosedLoopRamps(closedLoopConfig)
                                                         .withSlot0(pid0Configs);
-        IntakeArmConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.PIVOT_MOTOR_MAX_VEL;
+
+        /*IntakeArmConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.PIVOT_MOTOR_MAX_VEL;
         IntakeArmConfig.MotionMagic.MotionMagicAcceleration = ISC.PIVOT_MOTOR_ACCEL;
-        IntakeArmConfig.MotionMagic.MotionMagicJerk = ISC.PIVOT_MOTOR_JERK;
+        IntakeArmConfig.MotionMagic.MotionMagicJerk = ISC.PIVOT_MOTOR_JERK;*/
+        // Testing showed that using MotionMagic was very slow to get over the center line when deploying, using position voltage however handled it well.
 
         StatusCode status = m_arm.getConfigurator().apply(IntakeArmConfig);
 
@@ -145,6 +149,9 @@ double arm_target_angle = 0;
                                                         .withSupplyCurrentLimitEnable(ISC.ROLLER_ENABLE_SUPPLY_CURRENT_LIMIT)
                                                         .withStatorCurrentLimit(ISC.ROLLER_STATOR_CURRENT_LIMIT)
                                                         .withStatorCurrentLimitEnable(ISC.ROLLER_ENABLE_STATOR_CURRENT_LIMIT);
+        CommutationConfigs commutationConfig = new CommutationConfigs().withAdvancedHallSupport(ISC.ROLLER_ADVANCED_HALL_SUPPORT_VALUE)
+                                                                       .withBrushedMotorWiring(null)
+                                                                       .withMotorArrangement(ISC.ROLLER_MOTOR_ARRANGEMENT_VALUE);
         Slot0Configs pid0Configs = new Slot0Configs().withKP(ISC.ROLLER_MOTOR_KP)
                                                      .withKI(ISC.ROLLER_MOTOR_KI)
                                                      .withKD(ISC.ROLLER_MOTOR_KD)
@@ -155,7 +162,9 @@ double arm_target_angle = 0;
                                                           .withCurrentLimits(currentLimitConfig)
                                                           .withOpenLoopRamps(openLoopConfig)
                                                           .withClosedLoopRamps(closedLoopConfig)
-                                                          .withSlot0(pid0Configs);
+                                                          .withSlot0(pid0Configs)
+                                                          .withCommutation(commutationConfig);
+
         IntakeRollersConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.ROLLER_MOTOR_MAX_VEL;
         IntakeRollersConfig.MotionMagic.MotionMagicAcceleration = ISC.ROLLER_MOTOR_ACCEL;
         IntakeRollersConfig.MotionMagic.MotionMagicJerk = ISC.ROLLER_MOTOR_JERK;
@@ -192,11 +201,16 @@ double arm_target_angle = 0;
                                                      .withKS(ISC.HOPPER_MOTOR_KS)
                                                      .withKV(ISC.HOPPER_MOTOR_KV)
                                                      .withKA(ISC.HOPPER_MOTOR_KA);
+        CommutationConfigs commutationConfigs = new CommutationConfigs().withAdvancedHallSupport(ISC.HOPPER_ADVANCED_HALL_SUPPORT_VALUE)
+                                                                        .withBrushedMotorWiring(null)
+                                                                        .withMotorArrangement(ISC.HOPPER_MOTOR_ARRANGEMENT_VALUE);
         var HopperFloorConfig = new TalonFXSConfiguration().withMotorOutput(motorOutputConfig)
                                                            .withCurrentLimits(currentLimitConfig)
                                                            .withOpenLoopRamps(openLoopConfig)
                                                            .withClosedLoopRamps(closedLoopConfig)
-                                                           .withSlot0(pid0Configs);
+                                                           .withSlot0(pid0Configs)
+                                                           .withCommutation(commutationConfigs);
+                                                           
         HopperFloorConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.HOPPER_MOTOR_MAX_VEL;
         HopperFloorConfig.MotionMagic.MotionMagicAcceleration = ISC.HOPPER_MOTOR_ACCEL;
         HopperFloorConfig.MotionMagic.MotionMagicJerk = ISC.HOPPER_MOTOR_JERK;
