@@ -23,6 +23,7 @@ import frc.lib.Sensors.GyroIO;
 import frc.robot.Constants.*;
 import frc.robot.commands.*;
 import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 // import frc.robot.subsystems.VisionSubsystem;
 // import frc.robot.LimelightHelpers.LimelightResults;
@@ -42,6 +43,7 @@ public class RobotContainer {
     private GyroIO                 m_gyroIO;
     private SwerveSubsystem        m_swerveSubsystem;
     private IntakeSubsystem        m_intakeSubsystem;
+    private ShooterSubsystem       m_ShooterSubsystem;
     // private VisionSubsystem     m_visionSubsystem;
     // private LimelightResults    limelight;
     // private Supplier<Pose2d>    m_robotPoseSupplier = ()-> m_swerveSubsystem.getPose();
@@ -107,15 +109,15 @@ public class RobotContainer {
         
         //    Left Bumbper (ALT)    => ALT mode: changes other buttons when pressed. No action on its own
         //    Right Bumper          => Slow mode (1/3 speed) while held
-        //    ALT + Right bumper    => Super slow (1/10 speed) while held
-        //    b                     => 
-        //    ALT + b               => 
-        //    y                     => 
-        //    ALT + y               => 
-        //    a                     => 
-        //    ALT + a               => 
-        //    x                     => Initiate Park (cross wheel angles), until any joystick input
-        //    ALT + x               => Cancel any fuel action in progress. Retract intake if out.
+        //    ALT + Right bumper    => Shoot until empty while held
+        //    b                     => Aim to April Tag
+        //    ALT + b               => End Aim to April Tag
+        //    y                     => Single Shoot when pressed
+        //    ALT + y               => Purge, Push all balls out of the robot
+        //    a                     => Extend intake
+        //    ALT + a               => Retrack intake all the way 
+        //    x                     => Stop spinning shooter, coast mode
+        //    ALT + x               => Bring intake to ball retention position
         //    RightTrigger          => Rotate around right front swerve module while held
         //    ALT + RightTrigger    => Rotate around right rear swerve module while held
         //    LefTrigger            => Rotate around left front swerve module while held
@@ -134,13 +136,13 @@ public class RobotContainer {
         //    ALT + Back            => 
         //    Start                 => 
         //    ALT + Start           => 
-        //    POV_UP                => 
+        //    POV_UP                => Sets the target April Tag to the center set (Looking at the hub from the driver stations)
         //    ALT + POV_UP          => 
-        //    POV_DOWN              => 
-        //    ALT + POV_DOWN        => 
-        //    POV_LEFT              => 
+        //    POV_DOWN              => Sets shooting range to close and spins up the shooter
+        //    ALT + POV_DOWN        => Sets shooting range to far and spins up the shooter
+        //    POV_LEFT              => Sets the target April Tag to the left set (Looking at the hub from the driver stations)
         //    ALT + POV_LEFT        => 
-        //    POV_RIGHT             => 
+        //    POV_RIGHT             => Sets the target April Tag to the right set (Looking at the hub from the driver stations)
         //    ALT + POV_RIGHT       => 
         //    ALT+LJoyStickButton   => 
         //    ALT+RJoystickButton   => 
@@ -165,18 +167,21 @@ public class RobotContainer {
         m_xbox.back().and(ALT.negate()).onTrue(new InstantCommand(() -> m_swerveSubsystem.zeroGyro()));   // was resetModulesToAbsolute()));
 
         // Right bumper alone = slow mode.
-        // Alt + Right Bumper = super slow mode.
         // On Right bumper release (regardless of Left Bumper state), full speed.
         m_xbox.rightBumper().and(ALT.negate()).onTrue(
                 new InstantCommand(()-> m_swerveSubsystem.setVarMaxOutputFactor(.5)));
-        ALT.and(m_xbox.rightBumper()).onTrue(
-                new InstantCommand(()-> m_swerveSubsystem.setVarMaxOutputFactor(.2)));
         m_xbox.rightBumper().onFalse(
                 new InstantCommand(()-> m_swerveSubsystem.setVarMaxOutputFactor(1.0)));
 
 //        m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> (cancelAction));
         // Swerve park 
-         ALT.and(m_xbox.x()).onTrue(m_parkCmd);
+        m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> m_ShooterSubsystem.stopShooting()));
+
+        ALT.and(m_xbox.rightBumper()).onTrue(new InstantCommand(()-> m_ShooterSubsystem.shootTillEmpty()));
+        m_xbox.y().and(ALT.negate()).onTrue(new InstantCommand(()-> m_ShooterSubsystem.singleShot()));
+        
+        m_xbox.povDown().and(ALT.negate()).onTrue(new InstantCommand(()-> m_ShooterSubsystem.spinUpFlywheelClose()));
+        ALT.and(m_xbox.povDown()).onTrue(new InstantCommand(()-> m_ShooterSubsystem.spinUpFlywheelsFar()));
 
 /*
         m_xbox.povLeft().and(ALT.negate()).onTrue(new InstantCommand(()-> );

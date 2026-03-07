@@ -1,20 +1,30 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.StatusCode;
+import com.ctre.phoenix6.configs.CANrangeConfiguration;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CommutationConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.CustomParamsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
+import com.ctre.phoenix6.configs.FovParamsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
+import com.ctre.phoenix6.configs.ProximityParamsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TalonFXSConfiguration;
+import com.ctre.phoenix6.configs.ToFParamsConfigs;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
+import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.hardware.TalonFXS;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.GravityTypeValue;
+
+import org.opencv.features2d.BFMatcher;
+
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ISC;
@@ -28,6 +38,7 @@ public class ShooterSubsystem  extends SubsystemBase {
     private TalonFXS m_leftFeedWheel;
     private TalonFXS m_rightFeedWheel;
     private CANBus m_shooterBus;
+    private CANrange m_canrange;
 
     public ShooterSubsystem(CANBus shooterBus) {
         m_shooterBus = shooterBus;
@@ -35,11 +46,43 @@ public class ShooterSubsystem  extends SubsystemBase {
         m_rightFlywheel = new TalonFX(SSC.RIGHT_SHOOTER_MOTOR_ID, shooterBus);
         m_leftFeedWheel = new TalonFXS(SSC.LEFT_FEED_MOTOR_ID, shooterBus);
         m_rightFeedWheel = new TalonFXS(SSC.RIGHT_FEED_MOTOR_ID, shooterBus);
+        m_canrange = new CANrange(SSC.CANRANGE_ID, shooterBus);
         configFlywheels();
         configFeedMotors();
+        configCANRange();
     }
     
-    
+    public void spinUpFlywheelClose() {
+        VelocityVoltage request = new VelocityVoltage(60); //TODO: Test the speeds that work for what ranges
+        m_leftFlywheel.setControl(request);
+        m_rightFlywheel.setControl(request);
+    }
+    public void spinUpFlywheelsFar(){
+        VelocityVoltage request = new VelocityVoltage(85); //TODO: Test the speeds that work for what ranges
+        m_leftFlywheel.setControl(request);
+        m_rightFlywheel.setControl(request);
+    }
+    public void singleShot() {
+        double currentDistance = m_canrange.getDistance().getValueAsDouble();
+        double threshold = 0.15;
+        VelocityVoltage request = new VelocityVoltage(195);
+        if (currentDistance < threshold) {
+            m_leftFeedWheel.stopMotor();
+        } else {
+             m_leftFeedWheel.setControl(request);
+        }
+    }
+    public void shootTillEmpty() {
+        VelocityVoltage request = new VelocityVoltage(195);
+        m_leftFeedWheel.setControl(request);
+        m_rightFeedWheel.setControl(request);
+    }
+    public void stopShooting() {
+        m_leftFeedWheel.stopMotor();
+        m_rightFeedWheel.stopMotor();
+        m_leftFlywheel.stopMotor();
+        m_rightFlywheel.stopMotor();
+    }
     /**
      * 
      * @param distance Distance in meters, for scoring in the HUB
@@ -144,6 +187,24 @@ private void configFeedMotors() {
 
     }
     
+    private void configCANRange() {
+       FovParamsConfigs fovParamsConfig = new FovParamsConfigs().withFOVCenterX(SSC.CANRANGE_FOV_CENTER_X_ANGLE)
+                                                                .withFOVCenterY(SSC.CANRANGE_FOV_CENTER_Y_ANGLE)
+                                                                .withFOVRangeX(SSC.CANRANGE_FOV_RANGE_X_ANGLE)
+                                                                .withFOVRangeY(SSC.CANRANGE_FOV_RANGE_Y_ANGLE);
+        ProximityParamsConfigs proximityParamsConfigs = new ProximityParamsConfigs().withMinSignalStrengthForValidMeasurement(SSC.CANRANGE_MINIMUM_SIGNAL)
+                                                                                    .withProximityHysteresis(SSC.CANRANGE_PROXIMITY_HYSTERESIS)
+                                                                                    .withProximityThreshold(SSC.CANRANGE_PROXIMITY_THRESHOLD);
+        ToFParamsConfigs tofParamsConfigs = new ToFParamsConfigs().withUpdateFrequency(SSC.CANRANGE_UPDATE_FREQUENCY)
+                                                                  .withUpdateMode(SSC.CANRANGE_UPDATE_MODE);
+        var canrangeConfig = new CANrangeConfiguration().withFovParams(fovParamsConfig)
+                                                        .withProximityParams(proximityParamsConfigs)
+                                                        .withToFParams(tofParamsConfigs);
+        StatusCode status = m_canrange.getConfigurator().apply(canrangeConfig);
+            if (! status.isOK()) System.out.println("CANrange config "
+                                                    +status.getDescription());
+    }  
+
     public void prepareDistantShot(double distance)
     {
         targetDistance = distance;

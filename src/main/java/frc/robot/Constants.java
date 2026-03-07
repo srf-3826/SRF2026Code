@@ -11,6 +11,8 @@ import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.ctre.phoenix6.signals.UpdateModeValue;
+
 import static edu.wpi.first.units.Units.Inches;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -24,6 +26,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.Frequency;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -577,12 +580,12 @@ public final class Constants {
         public static final Current FLY_STATOR_CURRENT_LIMIT = null;
         public static final boolean FLY_ENABLE_STATOR_CURRENT_LIMIT = false;
 
-        public static final double FLY_MOTOR_KP = 0;
+        public static final double FLY_MOTOR_KP = 10;
         public static final double FLY_MOTOR_KI = 0;
         public static final double FLY_MOTOR_KD = 0;
         public static final double FLY_MOTOR_KS = 0;
-        public static final double FLY_MOTOR_KV = 0;
-        public static final double FLY_MOTOR_KA = 0;
+        public static final double FLY_MOTOR_KV = 1;
+        public static final double FLY_MOTOR_KA = 1;
         public static final double FLY_MOTOR_KG = 0;
 
         public static final double FLY_MOTOR_MAX_VEL = 50;
@@ -618,6 +621,18 @@ public final class Constants {
              public static final boolean FEED_ENABLE_STATOR_CURRENT_LIMIT = true;
             public static final double FEED_STATOR_CURRENT_LIMIT = 0.0;
 
+        public static final int CANRANGE_ID = 24;
+
+            public static final double CANRANGE_FOV_CENTER_X_ANGLE = 0;
+            public static final double CANRANGE_FOV_CENTER_Y_ANGLE = 0;
+            public static final double CANRANGE_FOV_RANGE_X_ANGLE = 27;
+            public static final double CANRANGE_FOV_RANGE_Y_ANGLE = 27;
+
+            public static final double CANRANGE_MINIMUM_SIGNAL = 2500;
+            public static final double CANRANGE_PROXIMITY_HYSTERESIS = 0.009999999776482582;
+            public static final double CANRANGE_PROXIMITY_THRESHOLD = 0.15000000596046448;
+            public static final double CANRANGE_UPDATE_FREQUENCY = 50;
+            public static final UpdateModeValue CANRANGE_UPDATE_MODE = UpdateModeValue.ShortRange100Hz;
     }
     
     public static final class VC { //Vision Constants

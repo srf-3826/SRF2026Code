@@ -121,11 +121,11 @@ double arm_target_angle = 0;
         /*IntakeArmConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.PIVOT_MOTOR_MAX_VEL;
         IntakeArmConfig.MotionMagic.MotionMagicAcceleration = ISC.PIVOT_MOTOR_ACCEL;
         IntakeArmConfig.MotionMagic.MotionMagicJerk = ISC.PIVOT_MOTOR_JERK;*/
-        // Testing showed that using MotionMagic was very slow to get over the center line when deploying, using position voltage however handled it well.
+        //TODO: Testing showed that using MotionMagic was very slow to get over the center line when deploying, using position voltage however handled it well.
 
         StatusCode status = m_arm.getConfigurator().apply(IntakeArmConfig);
 
-        if (! status.isOK()) System.out.println("IntakeArm motor config: "
+        if (! status.isOK()) System.out.println("Intake Arm motor config: "
                                                 +status.getDescription());
     }
 
