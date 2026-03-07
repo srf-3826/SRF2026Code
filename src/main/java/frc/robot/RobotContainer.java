@@ -22,6 +22,7 @@ import frc.lib.Sensors.GyroIO;
 // import frc.robot.autos.*;
 import frc.robot.Constants.*;
 import frc.robot.commands.*;
+import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 // import frc.robot.subsystems.VisionSubsystem;
 // import frc.robot.LimelightHelpers.LimelightResults;
@@ -35,12 +36,12 @@ import frc.robot.subsystems.SwerveSubsystem;
  */
 public class RobotContainer {
     private CANBus swerveCanbus = new CANBus(Constants.CAN_BUS_FOR_SWERVE);
-    private CANBus turretCanbus = new CANBus(Constants.CAN_BUS_FOR_TURRET);
     private CANBus allElseCanbus = new CANBus(Constants.CAN_BUS_FOR_EVERYTHING_ELSE);
 
     // Declare subsystem object handles
     private GyroIO                 m_gyroIO;
     private SwerveSubsystem        m_swerveSubsystem;
+    private IntakeSubsystem        m_intakeSubsystem;
     // private VisionSubsystem     m_visionSubsystem;
     // private LimelightResults    limelight;
     // private Supplier<Pose2d>    m_robotPoseSupplier = ()-> m_swerveSubsystem.getPose();
@@ -60,6 +61,7 @@ public class RobotContainer {
         m_xbox = new CommandXboxController(0);
         m_gyroIO = new GyroIO(GC.PIGEON_2_CANID, GC.INVERT_GYRO, swerveCanbus);
         m_swerveSubsystem = new SwerveSubsystem(m_gyroIO, swerveCanbus);
+        m_intakeSubsystem = new IntakeSubsystem(allElseCanbus);
         // m_poseEstimatorSubsystem = new PoseEstimatorSubsystem(limelight, m_swerveSubsystem);
         // m_visionSubsystem = new VisionSubsystem(limelight, m_swerveSubsystem);
         // m_climbSubsystem = new ClimbSubsystem();

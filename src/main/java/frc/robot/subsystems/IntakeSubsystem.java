@@ -28,7 +28,7 @@ private PositionVoltage m_control_pivot;
 
 double arm_target_angle = 0;
         
-    IntakeSubsystem(CANBus intakeBus) {
+    public IntakeSubsystem(CANBus intakeBus) {
         m_intakeBus = intakeBus;
         m_arm = new TalonFX(ISC.INTAKE_PIVOT_MOTOR_ID, intakeBus);
         m_rollers = new TalonFXS(ISC.INTAKE_ROLLER_MOTOR_ID, intakeBus);

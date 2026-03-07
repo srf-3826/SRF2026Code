@@ -3,6 +3,7 @@ package frc.robot;
 import java.text.DecimalFormat;
 import java.util.Map;
 
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
@@ -17,7 +18,9 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
@@ -540,6 +543,42 @@ public final class Constants {
             public static final double ROLLER_MOTOR_JERK = 0;
 
             
+    }
+
+    public static final class SSC {
+
+        public static final double FLY_OPEN_LOOP_RAMP_PERIOD = 0;
+        public static final double FLY_CLOSED_LOOP_RAMP_PERIOD = 0;
+
+        public static final InvertedValue FLY_RIGHT_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive; // TODO: test both
+        public static final InvertedValue FLY_LEFT_MOTOR_INVERT = InvertedValue.Clockwise_Positive;
+        
+        public static final int LEFT_ENCODER_ID = 20;
+        public static final int RIGHT_ENCODER_ID = 21;
+
+        public static final double FLY_GEAR_RATIO = 1;
+
+        public static final NeutralModeValue FLY_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
+        
+        public static final int FLY_OUTPUT_MOTOR_LIMIT_FACTOR = 0;
+
+        public static final Current FLY_MOTOR_SUPPLY_CURRENT_LIMIT = null;
+        public static final boolean FLY_ENABLE_SUPPLY_CURRENT_LIMIT = false;
+
+        public static final Current FLY_STATOR_CURRENT_LIMIT = null;
+        public static final boolean FLY_ENABLE_STATOR_CURRENT_LIMIT = false;
+
+        public static final double FLY_MOTOR_KP = 0;
+        public static final double FLY_MOTOR_KI = 0;
+        public static final double FLY_MOTOR_KD = 0;
+        public static final double FLY_MOTOR_KS = 0;
+        public static final double FLY_MOTOR_KV = 0;
+        public static final double FLY_MOTOR_KA = 0;
+        public static final double FLY_MOTOR_KG = 0;
+
+        public static final double FLY_MOTOR_MAX_VEL = 50;
+        public static final double FLY_MOTOR_ACCEL = FLY_MOTOR_MAX_VEL/2;
+        public static final double FLY_MOTOR_JERK = 0;
     }
     
     public static final class VC { //Vision Constants
