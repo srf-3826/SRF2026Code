@@ -43,7 +43,7 @@ public class RobotContainer {
     private GyroIO                 m_gyroIO;
     private SwerveSubsystem        m_swerveSubsystem;
     private IntakeSubsystem        m_intakeSubsystem;
-    private ShooterSubsystem       m_ShooterSubsystem;
+    private ShooterSubsystem       m_shooterSubsystem;
     // private VisionSubsystem     m_visionSubsystem;
     // private LimelightResults    limelight;
     // private Supplier<Pose2d>    m_robotPoseSupplier = ()-> m_swerveSubsystem.getPose();
@@ -64,6 +64,7 @@ public class RobotContainer {
         m_gyroIO = new GyroIO(GC.PIGEON_2_CANID, GC.INVERT_GYRO, swerveCanbus);
         m_swerveSubsystem = new SwerveSubsystem(m_gyroIO, swerveCanbus);
         m_intakeSubsystem = new IntakeSubsystem(allElseCanbus);
+        m_shooterSubsystem = new ShooterSubsystem(allElseCanbus);
         // m_poseEstimatorSubsystem = new PoseEstimatorSubsystem(limelight, m_swerveSubsystem);
         // m_visionSubsystem = new VisionSubsystem(limelight, m_swerveSubsystem);
         // m_climbSubsystem = new ClimbSubsystem();
@@ -175,14 +176,14 @@ public class RobotContainer {
 
 //        m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> (cancelAction));
         // Swerve park 
-        m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> m_ShooterSubsystem.stopShooting()));
+        /*m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem));
 
-        ALT.and(m_xbox.rightBumper()).onTrue(new InstantCommand(()-> m_ShooterSubsystem.shootTillEmpty()));
-        m_xbox.y().and(ALT.negate()).onTrue(new InstantCommand(()-> m_ShooterSubsystem.singleShot()));
+        ALT.and(m_xbox.rightBumper()).onTrue(new InstantCommand(()-> m_shooterSubsystem));
+        m_xbox.y().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.singleShot()));
         
-        m_xbox.povDown().and(ALT.negate()).onTrue(new InstantCommand(()-> m_ShooterSubsystem.spinUpFlywheelClose()));
-        ALT.and(m_xbox.povDown()).onTrue(new InstantCommand(()-> m_ShooterSubsystem.spinUpFlywheelsFar()));
-
+        m_xbox.povDown().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelClose()));
+        ALT.and(m_xbox.povDown()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelsFar()));
+*/
 /*
         m_xbox.povLeft().and(ALT.negate()).onTrue(new InstantCommand(()-> );
         m_xbox.povRight().and(ALT.negate()).onTrue(new InstantCommand(()-> );

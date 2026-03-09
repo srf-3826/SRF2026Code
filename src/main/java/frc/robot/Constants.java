@@ -42,7 +42,7 @@ public final class Constants {
     // public static final String CAN_BUS_FOR_SWERVE = "CANivore0";
     public static final String CAN_BUS_FOR_SWERVE = "CANivore0";
     public static final String CAN_BUS_FOR_TURRET = "rio";
-    public static final String CAN_BUS_FOR_EVERYTHING_ELSE = "CANivore1";
+    public static final String CAN_BUS_FOR_EVERYTHING_ELSE = "Superstructure CANivore";
 
     public static final class F {
         // Formatters to control number of decimal places 
@@ -574,11 +574,11 @@ public final class Constants {
         
         public static final int FLY_OUTPUT_MOTOR_LIMIT_FACTOR = 0;
 
-        public static final Current FLY_MOTOR_SUPPLY_CURRENT_LIMIT = null;
-        public static final boolean FLY_ENABLE_SUPPLY_CURRENT_LIMIT = false;
+        public static final double FLY_MOTOR_SUPPLY_CURRENT_LIMIT = 40;
+        public static final boolean FLY_ENABLE_SUPPLY_CURRENT_LIMIT = true;
 
-        public static final Current FLY_STATOR_CURRENT_LIMIT = null;
-        public static final boolean FLY_ENABLE_STATOR_CURRENT_LIMIT = false;
+        public static final double FLY_STATOR_CURRENT_LIMIT = 70;
+        public static final boolean FLY_ENABLE_STATOR_CURRENT_LIMIT = true;
 
         public static final double FLY_MOTOR_KP = 10;
         public static final double FLY_MOTOR_KI = 0;
@@ -591,6 +591,13 @@ public final class Constants {
         public static final double FLY_MOTOR_MAX_VEL = 50;
         public static final double FLY_MOTOR_ACCEL = FLY_MOTOR_MAX_VEL/2;
         public static final double FLY_MOTOR_JERK = 0;
+
+        public static final double MAX_FLY_VEL = 94;
+        public static final double MIN_FLY_VEL = 50;
+        public static final double FLY_MOTOR_NEAR_DIST_VEL = 50;
+        public static final double FLY_MOTOR_FAR_DIST_VEL = 90;
+        public static final double FEED_MOTOR_TARGET_VEL = 195.0;
+        public static final double FLY_MOTOR_VEL_TOLERANCE = 50;
 
         public static final int LEFT_FEED_MOTOR_ID = 22;
         public static final int RIGHT_FEED_MOTOR_ID = 23;
@@ -630,7 +637,7 @@ public final class Constants {
 
             public static final double CANRANGE_MINIMUM_SIGNAL = 2500;
             public static final double CANRANGE_PROXIMITY_HYSTERESIS = 0.009999999776482582;
-            public static final double CANRANGE_PROXIMITY_THRESHOLD = 0.15000000596046448;
+            public static final double CANRANGE_FUEL_PRESENT_THRESHOLD = 0.15000000596046448;
             public static final double CANRANGE_UPDATE_FREQUENCY = 50;
             public static final UpdateModeValue CANRANGE_UPDATE_MODE = UpdateModeValue.ShortRange100Hz;
     }

@@ -1,6 +1,8 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.hardware.TalonFXS;
+
+import frc.robot.Constants;
 import frc.robot.Constants.*;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
@@ -150,7 +152,6 @@ double arm_target_angle = 0;
                                                         .withStatorCurrentLimit(ISC.ROLLER_STATOR_CURRENT_LIMIT)
                                                         .withStatorCurrentLimitEnable(ISC.ROLLER_ENABLE_STATOR_CURRENT_LIMIT);
         CommutationConfigs commutationConfig = new CommutationConfigs().withAdvancedHallSupport(ISC.ROLLER_ADVANCED_HALL_SUPPORT_VALUE)
-                                                                       .withBrushedMotorWiring(null)
                                                                        .withMotorArrangement(ISC.ROLLER_MOTOR_ARRANGEMENT_VALUE);
         Slot0Configs pid0Configs = new Slot0Configs().withKP(ISC.ROLLER_MOTOR_KP)
                                                      .withKI(ISC.ROLLER_MOTOR_KI)
@@ -202,7 +203,6 @@ double arm_target_angle = 0;
                                                      .withKV(ISC.HOPPER_MOTOR_KV)
                                                      .withKA(ISC.HOPPER_MOTOR_KA);
         CommutationConfigs commutationConfigs = new CommutationConfigs().withAdvancedHallSupport(ISC.HOPPER_ADVANCED_HALL_SUPPORT_VALUE)
-                                                                        .withBrushedMotorWiring(null)
                                                                         .withMotorArrangement(ISC.HOPPER_MOTOR_ARRANGEMENT_VALUE);
         var HopperFloorConfig = new TalonFXSConfiguration().withMotorOutput(motorOutputConfig)
                                                            .withCurrentLimits(currentLimitConfig)
