@@ -6,7 +6,6 @@ import com.ctre.phoenix6.configs.CANrangeConfiguration;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CommutationConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.FovParamsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
@@ -15,11 +14,10 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TalonFXSConfiguration;
 import com.ctre.phoenix6.configs.ToFParamsConfigs;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.hardware.TalonFXS;
-import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
-
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.*;
@@ -86,14 +84,14 @@ public class ShooterSubsystem extends SubsystemBase {
       // shut down for any reason.
       m_targetFlywheelVel = vel;
 
-      /*
-      * TODO: Inset code here to control the velocity PIDs. Do it for both 
+      /* 
       * left and right flywheels - no need to do just the left flywheel even for
       * single shots - because those are used for ranging, and continuous shooting
-      * is expected shortly afterwards. 
-      * 
-      */
+      * is expected shortly afterwards.*/
 
+      VelocityVoltage request = new VelocityVoltage(vel);
+      m_leftFlywheel.setControl(request);
+      m_rightFlywheel.setControl(request);
       // Now set the shooterState to GOING_TO_TARGET_VEL
       // Note that when singleShot() and fireContinuous() methods
       // call this method (it is convenient for then to use this method to 
@@ -180,12 +178,16 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public void startLeftFeedMotor() {
         // TODO: ensure bed rollers are on, inward
-        // TODO: sent valiocity control request to left feed motor
+
+        VelocityVoltage request = new VelocityVoltage(SSC.FEED_MOTOR_TARGET_VEL);
+        m_leftFeedWheel.setControl(request);
     }
     
     public void startRightFeedMotor() {
         // TODO: ensure bed rollers are on, inward
-        // TODO: send velocity PID control request to Right feed motor
+
+        VelocityVoltage request = new VelocityVoltage(SSC.FEED_MOTOR_TARGET_VEL);
+        m_rightFeedWheel.setControl(request);
     }
     
     // The stopShooting() method stops both feed motors, but leaves the shooter flywheel motors
@@ -195,7 +197,8 @@ public class ShooterSubsystem extends SubsystemBase {
     // the continuous shooting function (ALT - R_Bumper).
     public void stopShooting() {
       // Are there any validity checks needed to vet this call? If not, or if checks pass, continue.
-      // TODO: stop both feed motors
+      m_leftFeedWheel.stopMotor();
+      m_rightFeedWheel.stopMotor();
       // Leave flywheels unchanged
       // Let bed rollers continue to run?
       if (m_currentShooterState != ShooterState.IDLE) {
@@ -232,7 +235,8 @@ public class ShooterSubsystem extends SubsystemBase {
     public void shutdownShooter() {
       // No vetting - just shhut everythign down immediately
       stopShooting();                // Stops feed motors
-      // TODO: stop both flywheel motors
+      m_leftFlywheel.stopMotor();
+      m_rightFlywheel.stopMotor();
       changeStateTo(ShooterState.IDLE);
     }
     
@@ -252,8 +256,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
           case WAITING_FOR_SINGLE_SHOT:
             if (isFuelAtLeftShooterSensor()) {
-              //
-              // TODO: STOP left feed motor immediately here (because flywheel may not be up to speed).
+             // Stop left motor in case the fly motor is not ready
+                m_leftFeedWheel.stopMotor();
               // Now check if flywheel IS ready to shoot
               if (isLeftShooterReady()) {
                 // and if so, startShooting. That method changes the state
@@ -328,9 +332,10 @@ public class ShooterSubsystem extends SubsystemBase {
         var closedLoopConfig = new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0)
                                                            .withVoltageClosedLoopRampPeriod(SSC.FLY_CLOSED_LOOP_RAMP_PERIOD)
                                                            .withTorqueClosedLoopRampPeriod(0);
-        var feedbackConfig = new FeedbackConfigs().withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
+        /*var feedbackConfig = new FeedbackConfigs().withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
                                                   .withSensorToMechanismRatio(1)
                                                   .withRotorToSensorRatio(SSC.FLY_GEAR_RATIO);
+        This config isnt needed if just using the rotor sensor*/
         var motorOutputConfig = new MotorOutputConfigs().withNeutralMode(SSC.FLY_MOTOR_NEUTRAL_MODE)
                                                         .withInverted(SSC.FLY_LEFT_MOTOR_INVERT)
                                                         .withPeakForwardDutyCycle(SSC.FLY_OUTPUT_MOTOR_LIMIT_FACTOR)
@@ -376,9 +381,10 @@ private void configFeedMotors() {
         ClosedLoopRampsConfigs closedLoopConfig = new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0)
                                                            .withVoltageClosedLoopRampPeriod(SSC.FEED_CLOSED_LOOP_RAMP_PERIOD)
                                                            .withTorqueClosedLoopRampPeriod(0);
-        FeedbackConfigs feedbackConfig = new FeedbackConfigs().withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
+        /*FeedbackConfigs feedbackConfig = new FeedbackConfigs().withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
                                                   .withSensorToMechanismRatio(SSC.FEED_GEAR_RATIO)
                                                   .withRotorToSensorRatio(1.0);
+        This config isnt needed if just using the rotor sensor*/
         MotorOutputConfigs motorOutputConfig = new MotorOutputConfigs().withNeutralMode(SSC.FEED_MOTOR_NEUTRAL_MODE)
                                                         .withInverted(SSC.LEFT_FEED_MOTOR_INVERT)
                                                         .withPeakForwardDutyCycle(SSC.FEED_OUTPUT_MOTOR_LIMIT_FACTOR)
