@@ -3,6 +3,8 @@ package frc.robot.subsystems;
 import com.ctre.phoenix6.hardware.TalonFXS;
 
 import frc.robot.Constants;
+import frc.robot.Robot;
+import frc.robot.RobotContainer;
 import frc.robot.Constants.*;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
@@ -18,10 +20,17 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusCode;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeSubsystem extends SubsystemBase {
+public Boolean intake_is_at_pickup;
+public Boolean intake_is_at_hold;
+public Boolean intake_is_at_retract;
+
+PIDController initial_overCenterPID;
+
 private TalonFX m_arm ; // 2.5:1 on a 27:1, kraken
 private TalonFXS m_rollers; // 9:1, minion
 private TalonFXS m_hopper; // gear ration 3:1, neo
@@ -38,23 +47,32 @@ double arm_target_angle = 0;
         m_rollers = new TalonFXS(ISC.INTAKE_ROLLER_MOTOR_ID, intakeBus);
         m_hopper = new TalonFXS(ISC.HOPPER_FLOOR_MOTOR_ID, intakeBus);
         m_encoder = new CANcoder(ISC.ARM_ENCODER_ID, intakeBus);
+        initial_overCenterPID = new PIDController(ISC.PIVOT_MOTOR_KP, ISC.PIVOT_MOTOR_KI, ISC.PIVOT_MOTOR_KD);
+        initial_overCenterPID.setSetpoint(ISC.PIVOT_MOTOR_HOLD_ANGLE);
         configPivotMotor();
         configHopperMotor();
         configRollerMotor();
         configArmEncoder();
     }
-//TODO: Change the MotionMagicVoltage PIDs over to PositionVoltage PIDs for the Arm.
     public void arm_gotoRetract() {
-        MotionMagicVoltage request = new MotionMagicVoltage(0);
-        m_arm.setControl(request.withPosition(ISC.PIVOT_MOTOR_RETRACT_ANGLE));
+        PositionVoltage request = new PositionVoltage(ISC.PIVOT_MOTOR_RETRACT_ANGLE);
+        m_arm.setControl(request);
     }
     public void arm_gotoFloorPickup() {
-        MotionMagicVoltage request = new MotionMagicVoltage(0);
-        m_arm.setControl(request.withPosition(ISC.PIVOT_MOTOR_FLOOR_ANGLE));
+        PositionVoltage request = new PositionVoltage(ISC.PIVOT_MOTOR_FLOOR_ANGLE);
+        m_arm.setControl(request);
     }
     public void arm_gotoHold() {
-        MotionMagicVoltage request = new MotionMagicVoltage(0);
-        m_arm.setControl(request.withPosition(ISC.PIVOT_MOTOR_HOLD_ANGLE));
+        PositionVoltage request = new PositionVoltage(ISC.PIVOT_MOTOR_HOLD_ANGLE);
+        m_arm.setControl(request);
+    }
+    public void arm_initOverCenter() {
+        double correction = initial_overCenterPID.calculate(m_arm.getPosition(true).getValueAsDouble());
+        VelocityVoltage drive = new VelocityVoltage(correction);
+        m_arm.setControl(drive);
+    }
+    public double arm_getPosition() {
+        return m_arm.getPosition(true).getValueAsDouble();
     }
     
    

@@ -540,7 +540,7 @@ public final class Constants {
 
             public static final double PIVOT_MOTOR_FLOOR_ANGLE = -0.010498; // angle at pickup position
             public static final double PIVOT_MOTOR_RETRACT_ANGLE = -0.247559; // angle at full retraction
-            public static final double PIVOT_MOTOR_HOLD_ANGLE = -1.41113; // angle at the cruising midpoint (just in front of hopper)
+            public static final double PIVOT_MOTOR_HOLD_ANGLE = -0.1589; // angle at the cruising midpoint (just in front of hopper)
 
             public static final double ROLLER_SPEED = 3; // TODO: dial this in
 
