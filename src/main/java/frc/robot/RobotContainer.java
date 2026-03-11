@@ -64,7 +64,7 @@ public class RobotContainer {
         m_gyroIO = new GyroIO(GC.PIGEON_2_CANID, GC.INVERT_GYRO, swerveCanbus);
         m_swerveSubsystem = new SwerveSubsystem(m_gyroIO, swerveCanbus);
         m_intakeSubsystem = new IntakeSubsystem(allElseCanbus);
-        m_shooterSubsystem = new ShooterSubsystem(allElseCanbus);
+        m_shooterSubsystem = new ShooterSubsystem(allElseCanbus, m_intakeSubsystem);
         // m_poseEstimatorSubsystem = new PoseEstimatorSubsystem(limelight, m_swerveSubsystem);
         // m_visionSubsystem = new VisionSubsystem(limelight, m_swerveSubsystem);
         // m_climbSubsystem = new ClimbSubsystem();
@@ -153,10 +153,13 @@ public class RobotContainer {
         // is needed, but normally these button bindings are needed for offense.
         m_xbox.leftTrigger().and(ALT.negate()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setFLCenOfRotation()));
         m_xbox.leftTrigger().and(ALT.negate()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
+
         m_xbox.rightTrigger().and(ALT.negate()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setFRCenOfRotation()));                                        
-        m_xbox.rightTrigger().and(ALT.negate()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));  
+        m_xbox.rightTrigger().and(ALT.negate()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation())); 
+
         ALT.and(m_xbox.leftTrigger()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setBLCenOfRotation()));
         ALT.and(m_xbox.leftTrigger()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
+        
         ALT.and(m_xbox.rightTrigger()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setBRCenOfRotation()));
         ALT.and(m_xbox.rightTrigger()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
         
@@ -178,7 +181,9 @@ public class RobotContainer {
         // Swerve park 
         m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.shutdownShooter()));
 
-        ALT.and(m_xbox.rightBumper()).whileTrue(new InstantCommand(()-> m_shooterSubsystem.shootContinuous()));
+        ALT.and(m_xbox.rightBumper()).onTrue(new InstantCommand(()-> m_shooterSubsystem.shootContinuous()));
+        ALT.and(m_xbox.rightBumper()).onFalse(new InstantCommand(()-> m_shooterSubsystem.stopShooting()));
+    
         m_xbox.y().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.singleShot()));
         
         m_xbox.povDown().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelClose()));

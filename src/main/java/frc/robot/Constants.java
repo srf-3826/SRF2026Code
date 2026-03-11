@@ -480,7 +480,7 @@ public final class Constants {
              public static final double ROLLER_GEAR_RATIO = 9;
              public static final double ROLLER_GEAR_RATIO_INVERTED = 1/ROLLER_GEAR_RATIO;
 
-             public static final double ROLLER_MOTOR_KP = 0;
+             public static final double ROLLER_MOTOR_KP = 1;
              public static final double ROLLER_MOTOR_KI = 0;
              public static final double ROLLER_MOTOR_KD = 0;
              public static final double ROLLER_MOTOR_KS = 0;
@@ -497,9 +497,9 @@ public final class Constants {
              public static final double ROLLER_CLOSED_LOOP_RAMP_PERIOD = 0.0;
 
              public static final boolean ROLLER_ENABLE_SUPPLY_CURRENT_LIMIT = true;
-             public static final double ROLLER_MOTOR_SUPPLY_CURRENT_LIMIT = 0.0;
+             public static final double ROLLER_MOTOR_SUPPLY_CURRENT_LIMIT = 25.0;
              public static final boolean ROLLER_ENABLE_STATOR_CURRENT_LIMIT = true;
-            public static final double ROLLER_STATOR_CURRENT_LIMIT = 0.0;
+            public static final double ROLLER_STATOR_CURRENT_LIMIT = 40.0;
 
             public static final AdvancedHallSupportValue ROLLER_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
             public static final MotorArrangementValue ROLLER_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.Minion_JST;
@@ -509,7 +509,7 @@ public final class Constants {
              public static final int HOPPER_GEAR_RATIO = 3;
              public static final double HOPPER_GEAR_RATIO_INVERTED = 1/HOPPER_GEAR_RATIO;
 
-             public static final double HOPPER_MOTOR_KP = 0;
+             public static final double HOPPER_MOTOR_KP = 1;
              public static final double HOPPER_MOTOR_KI = 0;
              public static final double HOPPER_MOTOR_KD = 0;
              public static final double HOPPER_MOTOR_KS = 0;
@@ -526,9 +526,9 @@ public final class Constants {
              public static final double HOPPER_CLOSED_LOOP_RAMP_PERIOD = 0.0;
 
              public static final boolean HOPPER_ENABLE_SUPPLY_CURRENT_LIMIT = true;
-             public static final double HOPPER_MOTOR_SUPPLY_CURRENT_LIMIT = 0.0;
+             public static final double HOPPER_MOTOR_SUPPLY_CURRENT_LIMIT = 25.0;
              public static final boolean HOPPER_ENABLE_STATOR_CURRENT_LIMIT = true;
-            public static final double HOPPER_STATOR_CURRENT_LIMIT = 0.0;
+            public static final double HOPPER_STATOR_CURRENT_LIMIT = 35.0;
 
             public static final AdvancedHallSupportValue HOPPER_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
             public static final MotorArrangementValue HOPPER_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.NEO_JST;
@@ -544,7 +544,7 @@ public final class Constants {
 
             public static final double ROLLER_SPEED = 3; // TODO: dial this in
 
-            public static final double HOPPER_SPEED = 3; // TODO: dial this in
+            public static final double HOPPER_SPEED = 30; // TODO: dial this in
 
             public static final double HOPPER_MOTOR_MAX_VEL = 10;
             public static final double HOPPER_MOTOR_ACCEL = 10;
@@ -564,6 +564,7 @@ public final class Constants {
 
         public static final InvertedValue FLY_RIGHT_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
         public static final InvertedValue FLY_LEFT_MOTOR_INVERT = InvertedValue.Clockwise_Positive;
+        
         
         public static final int LEFT_SHOOTER_MOTOR_ID = 20;
         public static final int RIGHT_SHOOTER_MOTOR_ID = 21;
@@ -624,9 +625,9 @@ public final class Constants {
              public static final double FEED_OPEN_LOOP_RAMP_PERIOD = 1.0;
              public static final double FEED_CLOSED_LOOP_RAMP_PERIOD = 0.0;
              public static final boolean FEED_ENABLE_SUPPLY_CURRENT_LIMIT = true;
-             public static final double FEED_MOTOR_SUPPLY_CURRENT_LIMIT = 0.0;
+             public static final double FEED_MOTOR_SUPPLY_CURRENT_LIMIT = 15.0;
              public static final boolean FEED_ENABLE_STATOR_CURRENT_LIMIT = true;
-            public static final double FEED_STATOR_CURRENT_LIMIT = 0.0;
+            public static final double FEED_STATOR_CURRENT_LIMIT = 25.0;
 
         public static final int CANRANGE_ID = 24;
 

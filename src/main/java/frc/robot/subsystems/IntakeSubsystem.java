@@ -43,10 +43,10 @@ double arm_target_angle = 0;
         
     public IntakeSubsystem(CANBus intakeBus) {
         m_intakeBus = intakeBus;
-        m_arm = new TalonFX(ISC.INTAKE_PIVOT_MOTOR_ID, intakeBus);
-        m_rollers = new TalonFXS(ISC.INTAKE_ROLLER_MOTOR_ID, intakeBus);
-        m_hopper = new TalonFXS(ISC.HOPPER_FLOOR_MOTOR_ID, intakeBus);
-        m_encoder = new CANcoder(ISC.ARM_ENCODER_ID, intakeBus);
+        m_arm = new TalonFX(ISC.INTAKE_PIVOT_MOTOR_ID, m_intakeBus);
+        m_rollers = new TalonFXS(ISC.INTAKE_ROLLER_MOTOR_ID, m_intakeBus);
+        m_hopper = new TalonFXS(ISC.HOPPER_FLOOR_MOTOR_ID, m_intakeBus);
+        m_encoder = new CANcoder(ISC.ARM_ENCODER_ID, m_intakeBus);
         initial_overCenterPID = new PIDController(ISC.PIVOT_MOTOR_KP, ISC.PIVOT_MOTOR_KI, ISC.PIVOT_MOTOR_KD);
         initial_overCenterPID.setSetpoint(ISC.PIVOT_MOTOR_HOLD_ANGLE);
         configPivotMotor();
@@ -77,29 +77,30 @@ double arm_target_angle = 0;
     
    
     public void intake_ExpelFuel() {
-        MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
+        VelocityVoltage request = new VelocityVoltage(0);
         m_rollers.setControl(request.withVelocity(-ISC.ROLLER_SPEED));
     }
     public void intake_Halt() {
-        MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
+        VelocityVoltage request = new VelocityVoltage(0);
         m_rollers.setControl(request.withVelocity(0));
     }
     public void intake_IntakeFuel() {
-        MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
+        VelocityVoltage request = new VelocityVoltage(0);
         m_rollers.setControl(request.withVelocity(ISC.ROLLER_SPEED));
     }
     
     public void hopper_ExpelFuel() {
-    MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
-        m_rollers.setControl(request.withVelocity(-ISC.HOPPER_SPEED));
+    VelocityVoltage request = new VelocityVoltage(0);
+        m_hopper.setControl(request.withVelocity(-ISC.HOPPER_SPEED));
     }
     public void hopper_Halt() {
-        MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
-        m_rollers.setControl(request.withVelocity(0));
+    VelocityVoltage request = new VelocityVoltage(0);
+        m_hopper.setControl(request.withVelocity(0));
     }
-    public void hopper_AlignFuelToShoot() {
-        MotionMagicVelocityVoltage request = new MotionMagicVelocityVoltage(0);
-        m_rollers.setControl(request.withVelocity(ISC.HOPPER_SPEED));
+    public void hopper_FeedFuelToShooter() {
+        VelocityVoltage request = new VelocityVoltage(ISC.HOPPER_SPEED);
+        m_hopper.setControl(request);
+        System.out.println("Hopper Turn On");
     }
 
     private void configPivotMotor() {

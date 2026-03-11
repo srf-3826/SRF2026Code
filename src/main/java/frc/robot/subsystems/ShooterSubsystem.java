@@ -18,11 +18,14 @@ import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.hardware.TalonFXS;
+import com.ctre.phoenix6.signals.InvertedValue;
+
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.*;
 
 public class ShooterSubsystem extends SubsystemBase {
+    private IntakeSubsystem   m_intakeSubsystem;
     private double    m_rpmLeft;
     private double    m_rpmRight;
     private TalonFX   m_leftFlywheel;
@@ -54,8 +57,9 @@ public class ShooterSubsystem extends SubsystemBase {
     private ShooterState  m_currentShooterState = ShooterState.IDLE;
     private double        m_targetFlywheelVel = 0.0;                  // Start out stopped 
 
-    public ShooterSubsystem(CANBus shooterBus) {
+    public ShooterSubsystem(CANBus shooterBus, IntakeSubsystem intakeSubsystem) {
         m_shooterBus = shooterBus;
+        m_intakeSubsystem = intakeSubsystem;
         m_leftFlywheel   = new TalonFX(SSC.LEFT_SHOOTER_MOTOR_ID, m_shooterBus);
         m_rightFlywheel  = new TalonFX(SSC.RIGHT_SHOOTER_MOTOR_ID, m_shooterBus);
         m_leftFeedWheel  = new TalonFXS(SSC.LEFT_FEED_MOTOR_ID, m_shooterBus);
@@ -71,6 +75,7 @@ public class ShooterSubsystem extends SubsystemBase {
     // single point of contact gateway to do logging in the future.
     private void changeStateTo(ShooterState newState) {
       m_currentShooterState = newState;
+      System.out.println(newState);
     }
 
     public void changeFlywheelTargetVel(double vel) {
@@ -164,8 +169,10 @@ public class ShooterSubsystem extends SubsystemBase {
     public void startShooting(ShootMode shootMode) {
       // No speed filters here - assume fully vetted shooter readiness,
       // which implies you should double check your code logic before calling!
+      m_intakeSubsystem.hopper_FeedFuelToShooter();
+
       if (shootMode == ShootMode.ONE) {
-          startLeftFeedMotor();;
+          startLeftFeedMotor();
           changeStateTo(ShooterState.FIRING_ONE);
       } else if (shootMode == ShootMode.CONTINUOOUS) {
           startLeftFeedMotor();
@@ -177,15 +184,12 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public void startLeftFeedMotor() {
-        // TODO: ensure bed rollers are on, inward
-
         VelocityVoltage request = new VelocityVoltage(SSC.FEED_MOTOR_TARGET_VEL);
         m_leftFeedWheel.setControl(request);
+        System.out.println("Start Left Feed Motor");
     }
     
     public void startRightFeedMotor() {
-        // TODO: ensure bed rollers are on, inward
-
         VelocityVoltage request = new VelocityVoltage(SSC.FEED_MOTOR_TARGET_VEL);
         m_rightFeedWheel.setControl(request);
     }
@@ -199,8 +203,8 @@ public class ShooterSubsystem extends SubsystemBase {
       // Are there any validity checks needed to vet this call? If not, or if checks pass, continue.
       m_leftFeedWheel.stopMotor();
       m_rightFeedWheel.stopMotor();
+      m_intakeSubsystem.hopper_Halt();
       // Leave flywheels unchanged
-      // Let bed rollers continue to run?
       if (m_currentShooterState != ShooterState.IDLE) {
         changeStateTo(ShooterState.READY_TO_FIRE);    // Maybe a stretch, but should be harmless
       }
@@ -258,16 +262,17 @@ public class ShooterSubsystem extends SubsystemBase {
             if (isFuelAtLeftShooterSensor()) {
              // Stop left motor in case the fly motor is not ready
                 m_leftFeedWheel.stopMotor();
-              // Now check if flywheel IS ready to shoot
-              if (isLeftShooterReady()) {
-                // and if so, startShooting. That method changes the state
-                startShooting(ShootMode.ONE);
-              }  // else not ready, so keep waiting
+                // Now check if flywheel IS ready to shoot
+                if (isLeftShooterReady()) {
+                    // and if so, startShooting. That method changes the state
+                    startShooting(ShootMode.ONE);
+                }  // else not ready, so keep waiting
             } else {
               // fuel is not under the feed wheel and at the sensor, so get 
               // that action started in case necessary. Then continue to wait
               // in current state (it won't hurt to restart motor every loop until ready)
               startLeftFeedMotor();
+              m_intakeSubsystem.hopper_FeedFuelToShooter();
             }
             break;
     
@@ -337,7 +342,7 @@ public class ShooterSubsystem extends SubsystemBase {
                                                   .withRotorToSensorRatio(SSC.FLY_GEAR_RATIO);
         This config isnt needed if just using the rotor sensor*/
         var motorOutputConfig = new MotorOutputConfigs().withNeutralMode(SSC.FLY_MOTOR_NEUTRAL_MODE)
-                                                        .withInverted(SSC.FLY_LEFT_MOTOR_INVERT)
+                                                        .withInverted(InvertedValue.Clockwise_Positive)
                                                         .withPeakForwardDutyCycle(SSC.FLY_OUTPUT_MOTOR_LIMIT_FACTOR)
                                                         .withPeakReverseDutyCycle(-SSC.FLY_OUTPUT_MOTOR_LIMIT_FACTOR);
                                                         //.withDutyCycleNeutralDeadband(.001);
@@ -358,16 +363,18 @@ public class ShooterSubsystem extends SubsystemBase {
                                                       .withOpenLoopRamps(openLoopConfig)
                                                       .withClosedLoopRamps(closedLoopConfig)
                                                       .withSlot0(pid0Configs);
+                                                      
+        StatusCode status = m_leftFlywheel.getConfigurator().apply(leftFlyConfig);
+
+        if (! status.isOK()) System.out.println("Left Flywheel motor config: "
+                                                +status.getDescription());
+                                                
         var rightFlyConfig = new TalonFXConfiguration().withMotorOutput(motorOutputConfig.withInverted(SSC.FLY_RIGHT_MOTOR_INVERT))
                                                        .withCurrentLimits(currentLimitConfig)
                                                        .withOpenLoopRamps(openLoopConfig)
                                                        .withClosedLoopRamps(closedLoopConfig)
                                                        .withSlot0(pid0Configs);
         
-        StatusCode status = m_leftFlywheel.getConfigurator().apply(leftFlyConfig);
-
-        if (! status.isOK()) System.out.println("Left Flywheel motor config: "
-                                                +status.getDescription());
         StatusCode statusRight = m_rightFlywheel.getConfigurator().apply(rightFlyConfig);
 
         if (! statusRight.isOK()) System.out.println("Right Flyhweel motor config "
@@ -408,7 +415,7 @@ private void configFeedMotors() {
                                                           .withClosedLoopRamps(closedLoopConfig)
                                                           .withSlot0(pid0Configs)
                                                           .withCommutation(commutationConfigs);
-        var rightFeedConfig = new TalonFXSConfiguration().withMotorOutput(motorOutputConfig.withInverted(SSC.FLY_RIGHT_MOTOR_INVERT))
+        var rightFeedConfig = new TalonFXSConfiguration().withMotorOutput(motorOutputConfig.withInverted(SSC.RIGHT_FEED_MOTOR_INVERT))
                                                          .withCurrentLimits(currentLimitConfig)
                                                          .withOpenLoopRamps(openLoopConfig)
                                                          .withClosedLoopRamps(closedLoopConfig)

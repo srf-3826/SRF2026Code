@@ -17,7 +17,7 @@ public class DeployIntakeCmd extends Command {
         } else {
             m_intake.arm_gotoFloorPickup();
         }
-        m_intake.hopper_AlignFuelToShoot();
+        m_intake.hopper_FeedFuelToShooter();
         m_intake.intake_IntakeFuel();
     }
 }
