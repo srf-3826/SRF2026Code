@@ -176,18 +176,17 @@ public class RobotContainer {
 
 //        m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> (cancelAction));
         // Swerve park 
-        /*m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem));
+        m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.shutdownShooter()));
 
-        ALT.and(m_xbox.rightBumper()).onTrue(new InstantCommand(()-> m_shooterSubsystem));
+        ALT.and(m_xbox.rightBumper()).whileTrue(new InstantCommand(()-> m_shooterSubsystem.shootContinuous()));
         m_xbox.y().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.singleShot()));
         
         m_xbox.povDown().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelClose()));
-        ALT.and(m_xbox.povDown()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelsFar()));
-*/
-/*
-        m_xbox.povLeft().and(ALT.negate()).onTrue(new InstantCommand(()-> );
-        m_xbox.povRight().and(ALT.negate()).onTrue(new InstantCommand(()-> );
-        m_xbox.povUp().and(ALT.negate()).onTrue(new InstantCommand(()-> );
+        ALT.and(m_xbox.povDown()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelFar()));
+
+        m_xbox.povLeft().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.incrementFlywheelVel()));
+        m_xbox.povRight().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.decrementFlywheelVel()));
+        /* m_xbox.povUp().and(ALT.negate()).onTrue(new InstantCommand(()-> );
         m_xbox.povDown().and(ALT.negate()).onTrue(new InstantCommand(()-> );
 
         // climb activities all require ALT button combination
