@@ -1,4 +1,4 @@
-package frc.lib.Sensors;
+package frc.lib.sensors;
 
 import com.ctre.phoenix6.StatusSignal;
 import edu.wpi.first.units.measure.*;
