@@ -22,6 +22,8 @@ import frc.lib.sensors.GyroIO;
 // import frc.robot.autos.*;
 import frc.robot.Constants.*;
 import frc.robot.commands.*;
+import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 // import frc.robot.subsystems.VisionSubsystem;
 // import frc.robot.LimelightHelpers.LimelightResults;
@@ -40,6 +42,8 @@ public class RobotContainer {
     // Declare subsystem object handles
     private GyroIO                 m_gyroIO;
     private SwerveSubsystem        m_swerveSubsystem;
+    private IntakeSubsystem        m_intakeSubsystem;
+    private ShooterSubsystem       m_shooterSubsystem;
     // private VisionSubsystem     m_visionSubsystem;
     // private LimelightResults    limelight;
     // private Supplier<Pose2d>    m_robotPoseSupplier = ()-> m_swerveSubsystem.getPose();
@@ -59,6 +63,8 @@ public class RobotContainer {
         m_xbox = new CommandXboxController(0);
         m_gyroIO = new GyroIO(GC.PIGEON_2_CANID, GC.INVERT_GYRO, swerveCanbus);
         m_swerveSubsystem = new SwerveSubsystem(m_gyroIO, swerveCanbus);
+        m_intakeSubsystem = new IntakeSubsystem(allElseCanbus);
+        m_shooterSubsystem = new ShooterSubsystem(allElseCanbus, m_intakeSubsystem);
         // m_poseEstimatorSubsystem = new PoseEstimatorSubsystem(limelight, m_swerveSubsystem);
         // m_visionSubsystem = new VisionSubsystem(limelight, m_swerveSubsystem);
         // m_climbSubsystem = new ClimbSubsystem();
@@ -104,15 +110,15 @@ public class RobotContainer {
         
         //    Left Bumbper (ALT)    => ALT mode: changes other buttons when pressed. No action on its own
         //    Right Bumper          => Slow mode (1/3 speed) while held
-        //    ALT + Right bumper    => Super slow (1/10 speed) while held
-        //    b                     => 
-        //    ALT + b               => 
-        //    y                     => 
-        //    ALT + y               => 
-        //    a                     => 
-        //    ALT + a               => 
-        //    x                     => Initiate Park (cross wheel angles), until any joystick input
-        //    ALT + x               => Cancel any fuel action in progress. Retract intake if out.
+        //    ALT + Right bumper    => Shoot until empty while held
+        //    b                     => Aim to April Tag
+        //    ALT + b               => End Aim to April Tag
+        //    y                     => Single Shoot when pressed
+        //    ALT + y               => Purge, Push all balls out of the robot
+        //    a                     => Extend intake
+        //    ALT + a               => Retrack intake all the way 
+        //    x                     => Stop spinning shooter, coast mode
+        //    ALT + x               => Bring intake to ball retention position
         //    RightTrigger          => Rotate around right front swerve module while held
         //    ALT + RightTrigger    => Rotate around right rear swerve module while held
         //    LefTrigger            => Rotate around left front swerve module while held
@@ -131,13 +137,13 @@ public class RobotContainer {
         //    ALT + Back            => 
         //    Start                 => 
         //    ALT + Start           => 
-        //    POV_UP                => 
+        //    POV_UP                => Sets the target April Tag to the center set (Looking at the hub from the driver stations)
         //    ALT + POV_UP          => 
-        //    POV_DOWN              => 
-        //    ALT + POV_DOWN        => 
-        //    POV_LEFT              => 
+        //    POV_DOWN              => Sets shooting range to close and spins up the shooter
+        //    ALT + POV_DOWN        => Sets shooting range to far and spins up the shooter
+        //    POV_LEFT              => Sets the target April Tag to the left set (Looking at the hub from the driver stations)
         //    ALT + POV_LEFT        => 
-        //    POV_RIGHT             => 
+        //    POV_RIGHT             => Sets the target April Tag to the right set (Looking at the hub from the driver stations)
         //    ALT + POV_RIGHT       => 
         //    ALT+LJoyStickButton   => 
         //    ALT+RJoystickButton   => 
@@ -147,10 +153,13 @@ public class RobotContainer {
         // is needed, but normally these button bindings are needed for offense.
         m_xbox.leftTrigger().and(ALT.negate()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setFLCenOfRotation()));
         m_xbox.leftTrigger().and(ALT.negate()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
+
         m_xbox.rightTrigger().and(ALT.negate()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setFRCenOfRotation()));                                        
-        m_xbox.rightTrigger().and(ALT.negate()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));  
+        m_xbox.rightTrigger().and(ALT.negate()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation())); 
+
         ALT.and(m_xbox.leftTrigger()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setBLCenOfRotation()));
         ALT.and(m_xbox.leftTrigger()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
+        
         ALT.and(m_xbox.rightTrigger()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setBRCenOfRotation()));
         ALT.and(m_xbox.rightTrigger()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
         
@@ -162,23 +171,27 @@ public class RobotContainer {
         m_xbox.back().and(ALT.negate()).onTrue(new InstantCommand(() -> m_swerveSubsystem.zeroGyro()));   // was resetModulesToAbsolute()));
 
         // Right bumper alone = slow mode.
-        // Alt + Right Bumper = super slow mode.
         // On Right bumper release (regardless of Left Bumper state), full speed.
         m_xbox.rightBumper().and(ALT.negate()).onTrue(
                 new InstantCommand(()-> m_swerveSubsystem.setVarMaxOutputFactor(.5)));
-        ALT.and(m_xbox.rightBumper()).onTrue(
-                new InstantCommand(()-> m_swerveSubsystem.setVarMaxOutputFactor(.2)));
         m_xbox.rightBumper().onFalse(
                 new InstantCommand(()-> m_swerveSubsystem.setVarMaxOutputFactor(1.0)));
 
 //        m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> (cancelAction));
         // Swerve park 
-         ALT.and(m_xbox.x()).onTrue(m_parkCmd);
+        m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.shutdownShooter()));
 
-/*
-        m_xbox.povLeft().and(ALT.negate()).onTrue(new InstantCommand(()-> );
-        m_xbox.povRight().and(ALT.negate()).onTrue(new InstantCommand(()-> );
-        m_xbox.povUp().and(ALT.negate()).onTrue(new InstantCommand(()-> );
+        ALT.and(m_xbox.rightBumper()).onTrue(new InstantCommand(()-> m_shooterSubsystem.shootContinuous()));
+        ALT.and(m_xbox.rightBumper()).onFalse(new InstantCommand(()-> m_shooterSubsystem.stopShooting()));
+    
+        m_xbox.y().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.singleShot()));
+        
+        m_xbox.povDown().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelClose()));
+        ALT.and(m_xbox.povDown()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelFar()));
+
+        m_xbox.povLeft().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.incrementFlywheelVel()));
+        m_xbox.povRight().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.decrementFlywheelVel()));
+        /* m_xbox.povUp().and(ALT.negate()).onTrue(new InstantCommand(()-> );
         m_xbox.povDown().and(ALT.negate()).onTrue(new InstantCommand(()-> );
 
         // climb activities all require ALT button combination

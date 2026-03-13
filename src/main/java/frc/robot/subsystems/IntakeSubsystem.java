@@ -1,10 +1,16 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.hardware.TalonFXS;
+
 import frc.robot.Constants;
+import frc.robot.Robot;
+import frc.robot.RobotContainer;
+import frc.robot.Constants.*;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.GravityTypeValue;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.configs.*;
@@ -13,9 +19,18 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusCode;
+
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeSubsystem extends SubsystemBase {
+public Boolean intake_is_at_pickup;
+public Boolean intake_is_at_hold;
+public Boolean intake_is_at_retract;
+
+PIDController initial_overCenterPID;
+
 private TalonFX m_arm ; // 2.5:1 on a 27:1, kraken
 private TalonFXS m_rollers; // 9:1, minion
 private TalonFXS m_hopper; // gear ration 3:1, neo
@@ -23,104 +38,100 @@ private CANcoder m_encoder;
 private CANBus m_intakeBus;
 private VelocityVoltage m_control_roller;
 private PositionVoltage m_control_pivot;
+
+double arm_target_angle = 0;
         
-    IntakeSubsystem(CANBus intakeBus) {
+    public IntakeSubsystem(CANBus intakeBus) {
         m_intakeBus = intakeBus;
-        TalonFX m_arm = new TalonFX(Constants.ISC.INTAKE_PIVOT_MOTOR_ID, intakeBus);
-        TalonFXS m_rollers = new TalonFXS(Constants.ISC.INTAKE_ROLLER_MOTOR_ID, intakeBus);
-        TalonFXS m_hopper = new TalonFXS(Constants.ISC.HOPPER_FLOOR_MOTOR_ID, intakeBus);
-        CANcoder m_encoder = new CANcoder(Constants.ISC.ARM_ENCODER_ID, intakeBus);
+        m_arm = new TalonFX(ISC.INTAKE_PIVOT_MOTOR_ID, m_intakeBus);
+        m_rollers = new TalonFXS(ISC.INTAKE_ROLLER_MOTOR_ID, m_intakeBus);
+        m_hopper = new TalonFXS(ISC.HOPPER_FLOOR_MOTOR_ID, m_intakeBus);
+        m_encoder = new CANcoder(ISC.ARM_ENCODER_ID, m_intakeBus);
+        initial_overCenterPID = new PIDController(ISC.PIVOT_MOTOR_KP, ISC.PIVOT_MOTOR_KI, ISC.PIVOT_MOTOR_KD);
+        initial_overCenterPID.setSetpoint(ISC.PIVOT_MOTOR_HOLD_ANGLE);
         configPivotMotor();
         configHopperMotor();
         configRollerMotor();
         configArmEncoder();
     }
-
-    public class IntakeChassis {
-        public static void setup() {
-
-        }
-        public static void execute() {
-
-        }
-        public static void gotoRetract() {
-
-        }
-        public static void gotoFloorPickup() {
-
-        }
-        public static void gotoIdle() {
-
-        }
+    public void arm_gotoRetract() {
+        PositionVoltage request = new PositionVoltage(ISC.PIVOT_MOTOR_RETRACT_ANGLE);
+        m_arm.setControl(request);
     }
-    public class IntakeRollers {
-        public static void setup() {
-            
-        }
-        public static void execute() {
-
-        }
-        public static void expelFuel() {
-
-        }
-        public static void halt() {
-
-        }
-        public static void intakeFuel() {
-
-        }
+    public void arm_gotoFloorPickup() {
+        PositionVoltage request = new PositionVoltage(ISC.PIVOT_MOTOR_FLOOR_ANGLE);
+        m_arm.setControl(request);
     }
-    public class HopperRollers {
-        public static void setup() {
-            
-        }
-        public static void execute() {
-
-        }
-        public static void expelFuel() {
-
-        }
-        public static void halt() {
-
-        }
-        public static void alignFuelToShoot() {
-
-        }
+    public void arm_gotoHold() {
+        PositionVoltage request = new PositionVoltage(ISC.PIVOT_MOTOR_HOLD_ANGLE);
+        m_arm.setControl(request);
     }
-
-    public void periodic(){
-
+    public void arm_initOverCenter() {
+        double correction = initial_overCenterPID.calculate(m_arm.getPosition(true).getValueAsDouble());
+        VelocityVoltage drive = new VelocityVoltage(correction);
+        m_arm.setControl(drive);
+    }
+    public double arm_getPosition() {
+        return m_arm.getPosition(true).getValueAsDouble();
+    }
+    
+   
+    public void intake_ExpelFuel() {
+        VelocityVoltage request = new VelocityVoltage(0);
+        m_rollers.setControl(request.withVelocity(-ISC.ROLLER_SPEED));
+    }
+    public void intake_Halt() {
+        VelocityVoltage request = new VelocityVoltage(0);
+        m_rollers.setControl(request.withVelocity(0));
+    }
+    public void intake_IntakeFuel() {
+        VelocityVoltage request = new VelocityVoltage(0);
+        m_rollers.setControl(request.withVelocity(ISC.ROLLER_SPEED));
+    }
+    
+    public void hopper_ExpelFuel() {
+    VelocityVoltage request = new VelocityVoltage(0);
+        m_hopper.setControl(request.withVelocity(-ISC.HOPPER_SPEED));
+    }
+    public void hopper_Halt() {
+    VelocityVoltage request = new VelocityVoltage(0);
+        m_hopper.setControl(request.withVelocity(0));
+    }
+    public void hopper_FeedFuelToShooter() {
+        VelocityVoltage request = new VelocityVoltage(ISC.HOPPER_SPEED);
+        m_hopper.setControl(request);
+        System.out.println("Hopper Turn On");
     }
 
     private void configPivotMotor() {
         var openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
-                                                       .withVoltageOpenLoopRampPeriod(Constants.ISC.PIVOT_OPEN_LOOP_RAMP_PERIOD);
+                                                       .withVoltageOpenLoopRampPeriod(ISC.PIVOT_OPEN_LOOP_RAMP_PERIOD);
                                                        //.withTorqueOpenLoopRampPeriod(0);
         var closedLoopConfig = new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0)
-                                                           .withVoltageClosedLoopRampPeriod(Constants.ISC.PIVOT_CLOSED_LOOP_RAMP_PERIOD)
+                                                           .withVoltageClosedLoopRampPeriod(ISC.PIVOT_CLOSED_LOOP_RAMP_PERIOD)
                                                            .withTorqueClosedLoopRampPeriod(0);
-        var feedbackConfig = new FeedbackConfigs().withFeedbackRemoteSensorID(Constants.ISC.ARM_ENCODER_ID)
+        var feedbackConfig = new FeedbackConfigs().withFeedbackRemoteSensorID(ISC.ARM_ENCODER_ID)
                                                   .withFeedbackSensorSource(FeedbackSensorSourceValue.RemoteCANcoder)
                                                   .withSensorToMechanismRatio(1)
-                                                  .withRotorToSensorRatio(Constants.ISC.PIVOT_GEAR_RATIO);
-        var motorOutputConfig = new MotorOutputConfigs().withNeutralMode(Constants.ISC.PIVOT_MOTOR_NEUTRAL_MODE)
-                                                        .withInverted(Constants.ISC.PIVOT_MOTOR_INVERT)
-                                                        .withPeakForwardDutyCycle(Constants.ISC.PIVOT_OUTPUT_MOTOR_LIMIT_FACTOR)
-                                                        .withPeakReverseDutyCycle(-Constants.ISC.PIVOT_OUTPUT_MOTOR_LIMIT_FACTOR);
+                                                  .withRotorToSensorRatio(ISC.PIVOT_GEAR_RATIO);
+        var motorOutputConfig = new MotorOutputConfigs().withNeutralMode(ISC.PIVOT_MOTOR_NEUTRAL_MODE)
+                                                        .withInverted(ISC.PIVOT_MOTOR_INVERT)
+                                                        .withPeakForwardDutyCycle(ISC.PIVOT_OUTPUT_MOTOR_LIMIT_FACTOR)
+                                                        .withPeakReverseDutyCycle(-ISC.PIVOT_OUTPUT_MOTOR_LIMIT_FACTOR);
                                                         //.withDutyCycleNeutralDeadband(.001);
         CurrentLimitsConfigs currentLimitConfig = new CurrentLimitsConfigs()
-                                                        .withSupplyCurrentLimit(Constants.ISC.PIVOT_MOTOR_SUPPLY_CURRENT_LIMIT)
-                                                        .withSupplyCurrentLimitEnable(Constants.ISC.PIVOT_ENABLE_SUPPLY_CURRENT_LIMIT)
-                                                        .withStatorCurrentLimit(Constants.ISC.PIVOT_STATOR_CURRENT_LIMIT)
-                                                        .withStatorCurrentLimitEnable(Constants.ISC.PIVOT_ENABLE_STATOR_CURRENT_LIMIT);
-        Slot0Configs pid0Configs = new Slot0Configs().withKP(Constants.ISC.PIVOT_MOTOR_KP)
-                                                     .withKI(Constants.ISC.PIVOT_MOTOR_KI)
-                                                     .withKD(Constants.ISC.PIVOT_MOTOR_KD)
-                                                     .withKS(Constants.ISC.PIVOT_MOTOR_KS)
-                                                     .withKV(Constants.ISC.PIVOT_MOTOR_KV)
-                                                     .withKA(Constants.ISC.PIVOT_MOTOR_KA)
+                                                        .withSupplyCurrentLimit(ISC.PIVOT_MOTOR_SUPPLY_CURRENT_LIMIT)
+                                                        .withSupplyCurrentLimitEnable(ISC.PIVOT_ENABLE_SUPPLY_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimit(ISC.PIVOT_STATOR_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimitEnable(ISC.PIVOT_ENABLE_STATOR_CURRENT_LIMIT);
+        Slot0Configs pid0Configs = new Slot0Configs().withKP(ISC.PIVOT_MOTOR_KP)
+                                                     .withKI(ISC.PIVOT_MOTOR_KI)
+                                                     .withKD(ISC.PIVOT_MOTOR_KD)
+                                                     .withKS(ISC.PIVOT_MOTOR_KS)
+                                                     .withKV(ISC.PIVOT_MOTOR_KV)
+                                                     .withKA(ISC.PIVOT_MOTOR_KA)
                                                      .withGravityType(GravityTypeValue.Arm_Cosine)
-                                                     .withKG(Constants.ISC.PIVOT_MOTOR_KG);
+                                                     .withKG(ISC.PIVOT_MOTOR_KG);
         var IntakeArmConfig = new TalonFXConfiguration().withFeedback(feedbackConfig)
                                                         .withMotorOutput(motorOutputConfig)
                                                         .withCurrentLimits(currentLimitConfig)
@@ -128,43 +139,55 @@ private PositionVoltage m_control_pivot;
                                                         .withClosedLoopRamps(closedLoopConfig)
                                                         .withSlot0(pid0Configs);
 
+        /*IntakeArmConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.PIVOT_MOTOR_MAX_VEL;
+        IntakeArmConfig.MotionMagic.MotionMagicAcceleration = ISC.PIVOT_MOTOR_ACCEL;
+        IntakeArmConfig.MotionMagic.MotionMagicJerk = ISC.PIVOT_MOTOR_JERK;*/
+        //TODO: Testing showed that using MotionMagic was very slow to get over the center line when deploying, using position voltage however handled it well.
+
         StatusCode status = m_arm.getConfigurator().apply(IntakeArmConfig);
 
-        if (! status.isOK()) System.out.println("IntakeArm motor config: "
+        if (! status.isOK()) System.out.println("Intake Arm motor config: "
                                                 +status.getDescription());
     }
 
      private void configRollerMotor() {
         OpenLoopRampsConfigs openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
-                                                       .withVoltageOpenLoopRampPeriod(Constants.ISC.ROLLER_OPEN_LOOP_RAMP_PERIOD);
+                                                       .withVoltageOpenLoopRampPeriod(ISC.ROLLER_OPEN_LOOP_RAMP_PERIOD);
                                                        //.withTorqueOpenLoopRampPeriod(0);
         ClosedLoopRampsConfigs closedLoopConfig = new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0)
-                                                           .withVoltageClosedLoopRampPeriod(Constants.ISC.ROLLER_CLOSED_LOOP_RAMP_PERIOD)
+                                                           .withVoltageClosedLoopRampPeriod(ISC.ROLLER_CLOSED_LOOP_RAMP_PERIOD)
                                                            .withTorqueClosedLoopRampPeriod(0);
         var feedbackConfig = new FeedbackConfigs().withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
-                                                  .withSensorToMechanismRatio(Constants.ISC.ROLLER_GEAR_RATIO)
+                                                  .withSensorToMechanismRatio(ISC.ROLLER_GEAR_RATIO)
                                                   .withRotorToSensorRatio(1.0);
-        MotorOutputConfigs motorOutputConfig = new MotorOutputConfigs().withNeutralMode(Constants.ISC.ROLLER_MOTOR_NEUTRAL_MODE)
-                                                        .withInverted(Constants.ISC.ROLLER_MOTOR_INVERT)
-                                                        .withPeakForwardDutyCycle(Constants.ISC.ROLLER_OUTPUT_MOTOR_LIMIT_FACTOR)
-                                                        .withPeakReverseDutyCycle(-Constants.ISC.ROLLER_OUTPUT_MOTOR_LIMIT_FACTOR);
+        MotorOutputConfigs motorOutputConfig = new MotorOutputConfigs().withNeutralMode(ISC.ROLLER_MOTOR_NEUTRAL_MODE)
+                                                        .withInverted(ISC.ROLLER_MOTOR_INVERT)
+                                                        .withPeakForwardDutyCycle(ISC.ROLLER_OUTPUT_MOTOR_LIMIT_FACTOR)
+                                                        .withPeakReverseDutyCycle(-ISC.ROLLER_OUTPUT_MOTOR_LIMIT_FACTOR);
                                                         //.withDutyCycleNeutralDeadband(.001);
         CurrentLimitsConfigs currentLimitConfig = new CurrentLimitsConfigs()
-                                                        .withSupplyCurrentLimit(Constants.ISC.ROLLER_MOTOR_SUPPLY_CURRENT_LIMIT)
-                                                        .withSupplyCurrentLimitEnable(Constants.ISC.ROLLER_ENABLE_SUPPLY_CURRENT_LIMIT)
-                                                        .withStatorCurrentLimit(Constants.ISC.ROLLER_STATOR_CURRENT_LIMIT)
-                                                        .withStatorCurrentLimitEnable(Constants.ISC.ROLLER_ENABLE_STATOR_CURRENT_LIMIT);
-        Slot0Configs pid0Configs = new Slot0Configs().withKP(Constants.ISC.ROLLER_MOTOR_KP)
-                                                     .withKI(Constants.ISC.ROLLER_MOTOR_KI)
-                                                     .withKD(Constants.ISC.ROLLER_MOTOR_KD)
-                                                     .withKS(Constants.ISC.ROLLER_MOTOR_KS)
-                                                     .withKV(Constants.ISC.ROLLER_MOTOR_KV)
-                                                     .withKA(Constants.ISC.ROLLER_MOTOR_KA);
+                                                        .withSupplyCurrentLimit(ISC.ROLLER_MOTOR_SUPPLY_CURRENT_LIMIT)
+                                                        .withSupplyCurrentLimitEnable(ISC.ROLLER_ENABLE_SUPPLY_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimit(ISC.ROLLER_STATOR_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimitEnable(ISC.ROLLER_ENABLE_STATOR_CURRENT_LIMIT);
+        CommutationConfigs commutationConfig = new CommutationConfigs().withAdvancedHallSupport(ISC.ROLLER_ADVANCED_HALL_SUPPORT_VALUE)
+                                                                       .withMotorArrangement(ISC.ROLLER_MOTOR_ARRANGEMENT_VALUE);
+        Slot0Configs pid0Configs = new Slot0Configs().withKP(ISC.ROLLER_MOTOR_KP)
+                                                     .withKI(ISC.ROLLER_MOTOR_KI)
+                                                     .withKD(ISC.ROLLER_MOTOR_KD)
+                                                     .withKS(ISC.ROLLER_MOTOR_KS)
+                                                     .withKV(ISC.ROLLER_MOTOR_KV)
+                                                     .withKA(ISC.ROLLER_MOTOR_KA);
         var IntakeRollersConfig = new TalonFXSConfiguration().withMotorOutput(motorOutputConfig)
                                                           .withCurrentLimits(currentLimitConfig)
                                                           .withOpenLoopRamps(openLoopConfig)
                                                           .withClosedLoopRamps(closedLoopConfig)
-                                                          .withSlot0(pid0Configs);
+                                                          .withSlot0(pid0Configs)
+                                                          .withCommutation(commutationConfig);
+
+        IntakeRollersConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.ROLLER_MOTOR_MAX_VEL;
+        IntakeRollersConfig.MotionMagic.MotionMagicAcceleration = ISC.ROLLER_MOTOR_ACCEL;
+        IntakeRollersConfig.MotionMagic.MotionMagicJerk = ISC.ROLLER_MOTOR_JERK;
 
         StatusCode status = m_rollers.getConfigurator().apply(IntakeRollersConfig);
 
@@ -174,35 +197,42 @@ private PositionVoltage m_control_pivot;
                                                 
     private void configHopperMotor() {
         OpenLoopRampsConfigs openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
-                                                       .withVoltageOpenLoopRampPeriod(Constants.ISC.HOPPER_OPEN_LOOP_RAMP_PERIOD);
+                                                       .withVoltageOpenLoopRampPeriod(ISC.HOPPER_OPEN_LOOP_RAMP_PERIOD);
                                                        //.withTorqueOpenLoopRampPeriod(0);
         ClosedLoopRampsConfigs closedLoopConfig = new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0)
-                                                           .withVoltageClosedLoopRampPeriod(Constants.ISC.HOPPER_CLOSED_LOOP_RAMP_PERIOD)
+                                                           .withVoltageClosedLoopRampPeriod(ISC.HOPPER_CLOSED_LOOP_RAMP_PERIOD)
                                                            .withTorqueClosedLoopRampPeriod(0);
         FeedbackConfigs feedbackConfig = new FeedbackConfigs().withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
-                                                  .withSensorToMechanismRatio(Constants.ISC.HOPPER_GEAR_RATIO)
+                                                  .withSensorToMechanismRatio(ISC.HOPPER_GEAR_RATIO)
                                                   .withRotorToSensorRatio(1.0);
-        MotorOutputConfigs motorOutputConfig = new MotorOutputConfigs().withNeutralMode(Constants.ISC.HOPPER_MOTOR_NEUTRAL_MODE)
-                                                        .withInverted(Constants.ISC.HOPPER_MOTOR_INVERT)
-                                                        .withPeakForwardDutyCycle(Constants.ISC.HOPPER_OUTPUT_MOTOR_LIMIT_FACTOR)
-                                                        .withPeakReverseDutyCycle(-Constants.ISC.HOPPER_OUTPUT_MOTOR_LIMIT_FACTOR);
+        MotorOutputConfigs motorOutputConfig = new MotorOutputConfigs().withNeutralMode(ISC.HOPPER_MOTOR_NEUTRAL_MODE)
+                                                        .withInverted(ISC.HOPPER_MOTOR_INVERT)
+                                                        .withPeakForwardDutyCycle(ISC.HOPPER_OUTPUT_MOTOR_LIMIT_FACTOR)
+                                                        .withPeakReverseDutyCycle(-ISC.HOPPER_OUTPUT_MOTOR_LIMIT_FACTOR);
                                                         //.withDutyCycleNeutralDeadband(.001);
         CurrentLimitsConfigs currentLimitConfig = new CurrentLimitsConfigs()
-                                                        .withSupplyCurrentLimit(Constants.ISC.HOPPER_MOTOR_SUPPLY_CURRENT_LIMIT)
-                                                        .withSupplyCurrentLimitEnable(Constants.ISC.HOPPER_ENABLE_SUPPLY_CURRENT_LIMIT)
-                                                        .withStatorCurrentLimit(Constants.ISC.HOPPER_STATOR_CURRENT_LIMIT)
-                                                        .withStatorCurrentLimitEnable(Constants.ISC.HOPPER_ENABLE_STATOR_CURRENT_LIMIT);
-        Slot0Configs pid0Configs = new Slot0Configs().withKP(Constants.ISC.HOPPER_MOTOR_KP)
-                                                     .withKI(Constants.ISC.HOPPER_MOTOR_KI)
-                                                     .withKD(Constants.ISC.HOPPER_MOTOR_KD)
-                                                     .withKS(Constants.ISC.HOPPER_MOTOR_KS)
-                                                     .withKV(Constants.ISC.HOPPER_MOTOR_KV)
-                                                     .withKA(Constants.ISC.HOPPER_MOTOR_KA);
+                                                        .withSupplyCurrentLimit(ISC.HOPPER_MOTOR_SUPPLY_CURRENT_LIMIT)
+                                                        .withSupplyCurrentLimitEnable(ISC.HOPPER_ENABLE_SUPPLY_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimit(ISC.HOPPER_STATOR_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimitEnable(ISC.HOPPER_ENABLE_STATOR_CURRENT_LIMIT);
+        Slot0Configs pid0Configs = new Slot0Configs().withKP(ISC.HOPPER_MOTOR_KP)
+                                                     .withKI(ISC.HOPPER_MOTOR_KI)
+                                                     .withKD(ISC.HOPPER_MOTOR_KD)
+                                                     .withKS(ISC.HOPPER_MOTOR_KS)
+                                                     .withKV(ISC.HOPPER_MOTOR_KV)
+                                                     .withKA(ISC.HOPPER_MOTOR_KA);
+        CommutationConfigs commutationConfigs = new CommutationConfigs().withAdvancedHallSupport(ISC.HOPPER_ADVANCED_HALL_SUPPORT_VALUE)
+                                                                        .withMotorArrangement(ISC.HOPPER_MOTOR_ARRANGEMENT_VALUE);
         var HopperFloorConfig = new TalonFXSConfiguration().withMotorOutput(motorOutputConfig)
                                                            .withCurrentLimits(currentLimitConfig)
                                                            .withOpenLoopRamps(openLoopConfig)
                                                            .withClosedLoopRamps(closedLoopConfig)
-                                                           .withSlot0(pid0Configs);
+                                                           .withSlot0(pid0Configs)
+                                                           .withCommutation(commutationConfigs);
+                                                           
+        HopperFloorConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.HOPPER_MOTOR_MAX_VEL;
+        HopperFloorConfig.MotionMagic.MotionMagicAcceleration = ISC.HOPPER_MOTOR_ACCEL;
+        HopperFloorConfig.MotionMagic.MotionMagicJerk = ISC.HOPPER_MOTOR_JERK;
 
         StatusCode status = m_hopper.getConfigurator().apply(HopperFloorConfig);
 
@@ -211,15 +241,16 @@ private PositionVoltage m_control_pivot;
     }
 
     private void configArmEncoder() {
-        MagnetSensorConfigs magnetSensorConfig = new MagnetSensorConfigs().withAbsoluteSensorDiscontinuityPoint(Constants.ISC.ARM_ABSOLUTE_SENSOR_DISCONTINUITY_POINT)
-                                                                          .withMagnetOffset(Constants.ISC.ARM_ENCODER_MAGNET_OFFSET);
-                                                       //.withTorqueOpenLoopRampPeriod(0);
+         MagnetSensorConfigs magnetSensorConfig = new MagnetSensorConfigs().withAbsoluteSensorDiscontinuityPoint(ISC.ARM_ABSOLUTE_SENSOR_DISCONTINUITY_POINT)
+                                                                           .withMagnetOffset(ISC.ARM_ENCODER_MAGNET_OFFSET)
+                                                                           .withSensorDirection(SensorDirectionValue.CounterClockwise_Positive);
+                                                       
        
-        var ArmEncoderConfig = new CANcoderConfiguration().withMagnetSensor(magnetSensorConfig);
+         var ArmEncoderConfig = new CANcoderConfiguration().withMagnetSensor(magnetSensorConfig);
 
-        StatusCode status = m_encoder.getConfigurator().apply(ArmEncoderConfig);
+         StatusCode status = m_encoder.getConfigurator().apply(ArmEncoderConfig);
 
-        if (! status.isOK()) System.out.println("HopperFloor motor config: "
+         if (! status.isOK()) System.out.println("IntakeArm Encoder config: "
                                                 +status.getDescription());
     }
 }
