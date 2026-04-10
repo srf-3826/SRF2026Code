@@ -2,6 +2,9 @@ package frc.robot;
 
 import com.ctre.phoenix6.CANBus;
 
+// import choreo.auto.AutoRoutine;
+//  edu.wpi.first.math.trajectory.Trajectory;
+
 // import java.util.function.Supplier;
 
 // import org.photonvision.PhotonCamera;
@@ -9,6 +12,7 @@ import com.ctre.phoenix6.CANBus;
 // import edu.wpi.first.math.estimator.PoseEstimator;
 // import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 // import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 // import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -40,10 +44,25 @@ public class RobotContainer {
     private CANBus allElseCanbus = new CANBus(Constants.CAN_BUS_FOR_EVERYTHING_ELSE);
 
     // Declare subsystem object handles
+
     private GyroIO                 m_gyroIO;
     private SwerveSubsystem        m_swerveSubsystem;
     private IntakeSubsystem        m_intakeSubsystem;
     private ShooterSubsystem       m_shooterSubsystem;
+    //private RetractIntakeCmd       m_RetractIntakeCmd;
+    //private RetractIntakeToMaximumCmd  m_RetractIntakeToMaximumCmd;
+    //private Trajectory             m_Trajectory;
+    //private DoNothingCmd m_DoNothingCmd;
+    //private MidfieldFullDefenseAuto m_MidfieldFullDefenseAuto;
+    //private LeftMidfieldDefenseAuto m_LeftMidfieldDefenseAuto; 
+    //private RightMidfieldDefenseAuto m_RightMidfieldDefenseAuto; 
+    //private ShootPreload m_ShootPreload;
+    //private ShootPreloadThenLMD m_ShootPreloadThenLMD;
+    //private ShootPreloadThenRMD m_ShootPreloadThenRMD;
+
+    SendableChooser<Command> m_autoRoutineChooser = new SendableChooser<>();
+    //private DeployIntakeCmd        m_DeployIntakeCmd;;
+    //private EjectIntakeCmd         m_EjectIntakeCmd;
     // private VisionSubsystem     m_visionSubsystem;
     // private LimelightResults    limelight;
     // private Supplier<Pose2d>    m_robotPoseSupplier = ()-> m_swerveSubsystem.getPose();
@@ -65,6 +84,30 @@ public class RobotContainer {
         m_swerveSubsystem = new SwerveSubsystem(m_gyroIO, swerveCanbus);
         m_intakeSubsystem = new IntakeSubsystem(allElseCanbus);
         m_shooterSubsystem = new ShooterSubsystem(allElseCanbus, m_intakeSubsystem);
+
+        //m_RetractIntakeCmd = new RetractIntakeCmd(m_intakeSubsystem);
+       // m_DeployIntakeCmd = new DeployIntakeCmd(m_intakeSubsystem);
+        //m_RetractIntakeToMaximumCmd = new RetractIntakeToMaximumCmd(m_intakeSubsystem);
+        //m_EjectIntakeCmd = new EjectIntakeCmd(m_intakeSubsystem);
+
+        //m_DoNothingCmd = new DoNothingCmd();
+    //  m_MidfieldFullDefenseAuto = new MidfieldFullDefenseAuto();
+    //  m_LeftMidfieldDefenseAuto = new LeftMidFieldDefenseAuto();
+    //  m_RightMidfieldDefenseAuto = new RighttMidFieldDefenseAuto();
+       // m_ShootPreload = new ShootPreload(m_swerveSubsystem, m_shooterSubsystem, m_Trajectory);
+    //  m_ShootPreloadThenLMD = new ShootPreloadThenLMD();
+    //  m_ShootPreloadThenRMD = new ShootPreloadThenRMD();
+
+        //m_autoRoutineChooser.setDefaultOption("Do Nothing", m_DoNothingCmd);
+        //m_autoRoutineChooser.addOption("Mid Full Defense", m_MidfieldFullDefenseAuto); //MFD
+        //m_autoRoutineChooser.addOption("Left Mid Defense",m_LeftMidfieldDefenseAuto); //LMD
+        //m_autoRoutineChooser.addOption("Right Mid Defense", m_RightMidfieldDefenseAuto); //RMD
+        //m_autoRoutineChooser.addOption("Shoot Preload", m_ShootPreload);
+        //m_autoRoutineChooser.addOption("Shoot Then MD", m_ShootPreloadThenLMD);
+        //m_autoRoutineChooser.addOption("Shoot Then RMD", m_ShootPreloadThenRMD);
+        //SmartDashboard.putData(m_autoRoutineChooser);
+        
+
         // m_poseEstimatorSubsystem = new PoseEstimatorSubsystem(limelight, m_swerveSubsystem);
         // m_visionSubsystem = new VisionSubsystem(limelight, m_swerveSubsystem);
         // m_climbSubsystem = new ClimbSubsystem();
@@ -77,12 +120,12 @@ public class RobotContainer {
                                     () -> -m_xbox.getLeftX(),    // X = strafe: +left / -right
                                     () -> -m_xbox.getRightX())); // rotate: +CCW / -CW
 
-                // Park Cmd exits on any joystick input, so need to pass it all joystick input lambdas
-                m_parkCmd = new SwerveParkCmd(m_swerveSubsystem,
-                                      () -> -m_xbox.getLeftY(),
-                                      () -> -m_xbox.getLeftX(),
-                                      () -> -m_xbox.getRightX());
-    /*
+        // Park Cmd exits on any joystick input, so need to pass it all joystick input lambdas
+        m_parkCmd = new SwerveParkCmd(m_swerveSubsystem,
+                                () -> -m_xbox.getLeftY(),
+                                () -> -m_xbox.getLeftX(),
+                                () -> -m_xbox.getRightX());
+/*
         m_autoRoutineChooser.setDefaultOption("Default Name", m_defaultAutoCmd);
         SmartDashboard.putData("Autonomous Selection:", m_autoRoutineChooser);
     */
@@ -157,11 +200,11 @@ public class RobotContainer {
         m_xbox.rightTrigger().and(ALT.negate()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setFRCenOfRotation()));                                        
         m_xbox.rightTrigger().and(ALT.negate()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation())); 
 
-        ALT.and(m_xbox.leftTrigger()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setBLCenOfRotation()));
-        ALT.and(m_xbox.leftTrigger()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
+        //ALT.and(m_xbox.leftTrigger()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setBLCenOfRotation()));
+        //ALT.and(m_xbox.leftTrigger()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
         
-        ALT.and(m_xbox.rightTrigger()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setBRCenOfRotation()));
-        ALT.and(m_xbox.rightTrigger()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
+        //ALT.and(m_xbox.rightTrigger()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setBRCenOfRotation()));
+        //ALT.and(m_xbox.rightTrigger()).onFalse(new InstantCommand(()-> m_swerveSubsystem.resetCenOfRotation()));
         
         // Left and right joystick buttons determine field oriented or robot oriented driving
         m_xbox.leftStick().and(ALT.negate()).onTrue(new InstantCommand(()-> m_swerveSubsystem.setFieldOriented(true)));
@@ -177,20 +220,32 @@ public class RobotContainer {
         m_xbox.rightBumper().onFalse(
                 new InstantCommand(()-> m_swerveSubsystem.setVarMaxOutputFactor(1.0)));
 
-//        m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> (cancelAction));
+        m_xbox.x().and(ALT.negate()).onTrue(m_parkCmd);
         // Swerve park 
-        m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.shutdownShooter()));
+        // m_xbox.x().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.shutdownShooter()));
+        //ALT.and(m_xbox.x()).onTrue(m_RetractIntakeCmd);
 
-        ALT.and(m_xbox.rightBumper()).onTrue(new InstantCommand(()-> m_shooterSubsystem.shootContinuous()));
-        ALT.and(m_xbox.rightBumper()).onFalse(new InstantCommand(()-> m_shooterSubsystem.stopShooting()));
+        // ALT.and(m_xbox.rightBumper()).onTrue(new InstantCommand(()-> m_shooterSubsystem.shootContinuous()));
+        // ALT.and(m_xbox.rightBumper()).onFalse(new InstantCommand(()-> m_shooterSubsystem.stopShooting()));
+
+        m_xbox.povUp().onTrue(new InstantCommand(()-> m_shooterSubsystem.shootContinuous()));
+        m_xbox.povDown().onTrue(new InstantCommand(()-> m_shooterSubsystem.shutdownShooter()));
+
+        //ALT.and(m_xbox.leftTrigger()).onTrue(m_RetractIntakeToMaximumCmd);
+        //ALT.and(m_xbox.rightTrigger()).onTrue(m_EjectIntakeCmd);
     
-        m_xbox.y().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.singleShot()));
+       // m_xbox.y().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.singleShot()));
+        //ALT.and(m_xbox.y()).onTrue(m_EjectIntakeCmd);
         
-        m_xbox.povDown().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelClose()));
-        ALT.and(m_xbox.povDown()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelFar()));
+        //m_xbox.povDown().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelClose()));
+        //ALT.and(m_xbox.povDown()).onTrue(new InstantCommand(()-> m_shooterSubsystem.spinUpFlywheelFar()));
 
-        m_xbox.povLeft().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.incrementFlywheelVel()));
-        m_xbox.povRight().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.decrementFlywheelVel()));
+        //m_xbox.povLeft().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.incrementFlywheelVel()));
+        //m_xbox.povRight().and(ALT.negate()).onTrue(new InstantCommand(()-> m_shooterSubsystem.decrementFlywheelVel()));
+
+        //m_xbox.a().and(ALT.negate()).onTrue(m_DeployIntakeCmd);
+        //ALT.and(m_xbox.a()).onTrue(m_RetractIntakeToMaximumCmd);
+
         /* m_xbox.povUp().and(ALT.negate()).onTrue(new InstantCommand(()-> );
         m_xbox.povDown().and(ALT.negate()).onTrue(new InstantCommand(()-> );
 
@@ -208,16 +263,7 @@ public class RobotContainer {
     /*
      * getSelectedAutoCommand is called from Robot.AutonomousInit(),
      */
-    public Command getSelectedAutoCommand() {
-/*
-        Command selectedAuto = m_autoRoutineChooser.getSelected();
-
-        if (selectedAuto == null) {
-            selectedAuto = new DoNothingCmd();
-        }
-
-        return selectedAuto;
-*/
-        return null;
-    }
+   /* public Command getSelectedAutoCommand() {
+        return m_autoRoutineChooser.getSelected();
+    }*/
 }

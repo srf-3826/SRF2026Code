@@ -2,58 +2,64 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.hardware.TalonFXS;
 
-import frc.robot.Constants;
-import frc.robot.Robot;
-import frc.robot.RobotContainer;
+// import frc.robot.Constants;
+// import frc.robot.Robot;
+// import frc.robot.RobotContainer;
 import frc.robot.Constants.*;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
+// import com.ctre.phoenix6.hardware.TalonFX;
+// import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
-import com.ctre.phoenix6.signals.GravityTypeValue;
-import com.ctre.phoenix6.signals.MotorAlignmentValue;
-import com.ctre.phoenix6.signals.SensorDirectionValue;
-import com.ctre.phoenix6.hardware.CANcoder;
+// import com.ctre.phoenix6.signals.GravityTypeValue;
+// import com.ctre.phoenix6.signals.MotorAlignmentValue;
+// import com.ctre.phoenix6.signals.SensorDirectionValue;
+// import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.configs.*;
 import com.ctre.phoenix6.controls.*;
-import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.BaseStatusSignal;
+// import com.ctre.phoenix6.StatusSignal;
+// import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusCode;
 
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.units.measure.Angle;
+// import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+/*
+ * Modified 4/9/2026 to operate hopper bed rollers ONLY
+ * For Parade and demo purposes. Code for handling intake arm and rollers
+ * is still there, but commented out.
+ */
 
 public class IntakeSubsystem extends SubsystemBase {
 public Boolean intake_is_at_pickup;
 public Boolean intake_is_at_hold;
-public Boolean intake_is_at_retract;
 
 PIDController initial_overCenterPID;
 
-private TalonFX m_arm ; // 2.5:1 on a 27:1, kraken
-private TalonFXS m_rollers; // 9:1, minion
+// private TalonFX m_arm ; // 2.5:1 on a 27:1, kraken
+// private TalonFXS m_rollers; // 9:1, minion
 private TalonFXS m_hopper; // gear ration 3:1, neo
-private CANcoder m_encoder;
+// private CANcoder m_encoder;
 private CANBus m_intakeBus;
-private VelocityVoltage m_control_roller;
-private PositionVoltage m_control_pivot;
+// private VelocityVoltage m_control_roller;
+// private PositionVoltage m_control_pivot;
 
-double arm_target_angle = 0;
+// double arm_target_angle = 0;
         
     public IntakeSubsystem(CANBus intakeBus) {
         m_intakeBus = intakeBus;
-        m_arm = new TalonFX(ISC.INTAKE_PIVOT_MOTOR_ID, m_intakeBus);
-        m_rollers = new TalonFXS(ISC.INTAKE_ROLLER_MOTOR_ID, m_intakeBus);
+        //m_arm = new TalonFX(ISC.INTAKE_PIVOT_MOTOR_ID, m_intakeBus);
+        //m_rollers = new TalonFXS(ISC.INTAKE_ROLLER_MOTOR_ID, m_intakeBus);
         m_hopper = new TalonFXS(ISC.HOPPER_FLOOR_MOTOR_ID, m_intakeBus);
-        m_encoder = new CANcoder(ISC.ARM_ENCODER_ID, m_intakeBus);
-        initial_overCenterPID = new PIDController(ISC.PIVOT_MOTOR_KP, ISC.PIVOT_MOTOR_KI, ISC.PIVOT_MOTOR_KD);
-        initial_overCenterPID.setSetpoint(ISC.PIVOT_MOTOR_HOLD_ANGLE);
-        configPivotMotor();
+        // m_encoder = new CANcoder(ISC.ARM_ENCODER_ID, m_intakeBus);
+        // initial_overCenterPID = new PIDController(ISC.PIVOT_MOTOR_KP, ISC.PIVOT_MOTOR_KI, ISC.PIVOT_MOTOR_KD);
+        // initial_overCenterPID.setSetpoint(ISC.PIVOT_MOTOR_HOLD_ANGLE);
+        // configPivotMotor();
         configHopperMotor();
-        configRollerMotor();
-        configArmEncoder();
+        // configRollerMotor();
+        // configArmEncoder();
     }
+    /*
     public void arm_gotoRetract() {
         PositionVoltage request = new PositionVoltage(ISC.PIVOT_MOTOR_RETRACT_ANGLE);
         m_arm.setControl(request);
@@ -81,28 +87,29 @@ double arm_target_angle = 0;
         m_rollers.setControl(request.withVelocity(-ISC.ROLLER_SPEED));
     }
     public void intake_Halt() {
-        VelocityVoltage request = new VelocityVoltage(0);
-        m_rollers.setControl(request.withVelocity(0));
+    m_rollers.stopMotor();
     }
     public void intake_IntakeFuel() {
         VelocityVoltage request = new VelocityVoltage(0);
         m_rollers.setControl(request.withVelocity(ISC.ROLLER_SPEED));
-    }
+    } 
     
     public void hopper_ExpelFuel() {
     VelocityVoltage request = new VelocityVoltage(0);
-        m_hopper.setControl(request.withVelocity(-ISC.HOPPER_SPEED));
+        m_hopper.setControl(request.withVelocity(-ISC.EJECT_HOPPER_SPEED));
     }
+
+*/
     public void hopper_Halt() {
-    VelocityVoltage request = new VelocityVoltage(0);
-        m_hopper.setControl(request.withVelocity(0));
+        m_hopper.stopMotor();
     }
+
     public void hopper_FeedFuelToShooter() {
         VelocityVoltage request = new VelocityVoltage(ISC.HOPPER_SPEED);
         m_hopper.setControl(request);
-        System.out.println("Hopper Turn On");
     }
 
+/*
     private void configPivotMotor() {
         var openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
                                                        .withVoltageOpenLoopRampPeriod(ISC.PIVOT_OPEN_LOOP_RAMP_PERIOD);
@@ -139,10 +146,11 @@ double arm_target_angle = 0;
                                                         .withClosedLoopRamps(closedLoopConfig)
                                                         .withSlot0(pid0Configs);
 
-        /*IntakeArmConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.PIVOT_MOTOR_MAX_VEL;
+        IntakeArmConfig.MotionMagic.MotionMagicCruiseVelocity = ISC.PIVOT_MOTOR_MAX_VEL;
         IntakeArmConfig.MotionMagic.MotionMagicAcceleration = ISC.PIVOT_MOTOR_ACCEL;
-        IntakeArmConfig.MotionMagic.MotionMagicJerk = ISC.PIVOT_MOTOR_JERK;*/
-        //TODO: Testing showed that using MotionMagic was very slow to get over the center line when deploying, using position voltage however handled it well.
+        IntakeArmConfig.MotionMagic.MotionMagicJerk = ISC.PIVOT_MOTOR_JERK;
+        //Testing showed that using MotionMagic was very slow to get over the center line 
+        // when deploying, using position voltage however handled it well.
 
         StatusCode status = m_arm.getConfigurator().apply(IntakeArmConfig);
 
@@ -194,7 +202,7 @@ double arm_target_angle = 0;
         if (! status.isOK()) System.out.println("IntakeRollers motor config: "
                                                 +status.getDescription());
     }
-                                                
+*/                                                
     private void configHopperMotor() {
         OpenLoopRampsConfigs openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
                                                        .withVoltageOpenLoopRampPeriod(ISC.HOPPER_OPEN_LOOP_RAMP_PERIOD);
@@ -239,7 +247,7 @@ double arm_target_angle = 0;
         if (! status.isOK()) System.out.println("HopperFloor motor config: "
                                                 +status.getDescription());
     }
-
+/*
     private void configArmEncoder() {
          MagnetSensorConfigs magnetSensorConfig = new MagnetSensorConfigs().withAbsoluteSensorDiscontinuityPoint(ISC.ARM_ABSOLUTE_SENSOR_DISCONTINUITY_POINT)
                                                                            .withMagnetOffset(ISC.ARM_ENCODER_MAGNET_OFFSET)
@@ -253,5 +261,5 @@ double arm_target_angle = 0;
          if (! status.isOK()) System.out.println("IntakeArm Encoder config: "
                                                 +status.getDescription());
     }
+*/
 }
-

@@ -3,31 +3,32 @@ package frc.robot;
 import java.text.DecimalFormat;
 import java.util.Map;
 
-import com.ctre.phoenix6.CANBus;
+// import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
-import com.ctre.phoenix6.signals.BrushedMotorWiringValue;
+// import com.ctre.phoenix6.signals.BrushedMotorWiringValue;
 import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.MotorAlignmentValue;
+// import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.signals.UpdateModeValue;
 
-import static edu.wpi.first.units.Units.Inches;
+// import static edu.wpi.first.units.Units.Inches;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+// import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.units.measure.Frequency;
-import edu.wpi.first.units.measure.Time;
+// import edu.wpi.first.units.measure.Angle;
+// import edu.wpi.first.units.measure.AngularVelocity;
+// import edu.wpi.first.units.measure.Current;
+// import edu.wpi.first.units.measure.Distance;
+// import edu.wpi.first.units.measure.Frequency;
+// import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
@@ -430,7 +431,7 @@ public final class Constants {
         public static final double KI_Y_CONTROLLER = 0.5;
         public static final double KP_THETA_CONTROLLER = 12.0;
         public static final double KI_THETA_CONTROLLER = 0.5;
-    
+
         /* Constraint for the motion profiled robot angle controller */
         public static final TrapezoidProfile.Constraints K_THETA_CONTROLLER_CONSTRAINTS =
                             new TrapezoidProfile.Constraints(AUTO_MAX_ANG_VEL_RAD_PER_SEC, 
@@ -446,7 +447,7 @@ public final class Constants {
              public static final double PIVOT_GEAR_RATIO = 3*9*32/12;
              public static final double PIVOT_GEAR_RATIO_INVERTED = 1/PIVOT_GEAR_RATIO;
 
-             public static final double PIVOT_MOTOR_KP = 18;
+             public static final double PIVOT_MOTOR_KP = 9;
              public static final double PIVOT_MOTOR_KI = 1.600000023841858;
              public static final double PIVOT_MOTOR_KD = 0;
              public static final double PIVOT_MOTOR_KS = 0.01953125;
@@ -463,7 +464,7 @@ public final class Constants {
 
              public static final int PIVOT_OUTPUT_MOTOR_LIMIT_FACTOR = 1;
 
-             public static final NeutralModeValue PIVOT_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
+             public static final NeutralModeValue PIVOT_MOTOR_NEUTRAL_MODE = NeutralModeValue.Brake;
              public static final InvertedValue PIVOT_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
 
              public static final double PIVOT_OPEN_LOOP_RAMP_PERIOD = 1.0;
@@ -542,9 +543,10 @@ public final class Constants {
             public static final double PIVOT_MOTOR_RETRACT_ANGLE = -0.247559; // angle at full retraction
             public static final double PIVOT_MOTOR_HOLD_ANGLE = -0.1589; // angle at the cruising midpoint (just in front of hopper)
 
-            public static final double ROLLER_SPEED = 3; // TODO: dial this in
+            public static final double ROLLER_SPEED = 75; // TODO: dial this in
 
-            public static final double HOPPER_SPEED = 30; // TODO: dial this in
+            public static final double HOPPER_SPEED = 20; // TODO: dial this in
+            public static final double EJECT_HOPPER_SPEED = 30; // TODO: dial this in
 
             public static final double HOPPER_MOTOR_MAX_VEL = 10;
             public static final double HOPPER_MOTOR_ACCEL = 10;
@@ -575,30 +577,30 @@ public final class Constants {
         
         public static final int FLY_OUTPUT_MOTOR_LIMIT_FACTOR = 0;
 
-        public static final double FLY_MOTOR_SUPPLY_CURRENT_LIMIT = 40;
+        public static final double FLY_MOTOR_SUPPLY_CURRENT_LIMIT = 35;
         public static final boolean FLY_ENABLE_SUPPLY_CURRENT_LIMIT = true;
 
         public static final double FLY_STATOR_CURRENT_LIMIT = 70;
         public static final boolean FLY_ENABLE_STATOR_CURRENT_LIMIT = true;
 
-        public static final double FLY_MOTOR_KP = 10;
+        public static final double FLY_MOTOR_KP = 1;
         public static final double FLY_MOTOR_KI = 0;
         public static final double FLY_MOTOR_KD = 0;
         public static final double FLY_MOTOR_KS = 0;
-        public static final double FLY_MOTOR_KV = 1;
-        public static final double FLY_MOTOR_KA = 1;
+        public static final double FLY_MOTOR_KV = 1.0;
+        public static final double FLY_MOTOR_KA = 0.0;
         public static final double FLY_MOTOR_KG = 0;
 
-        public static final double FLY_MOTOR_MAX_VEL = 50;
-        public static final double FLY_MOTOR_ACCEL = FLY_MOTOR_MAX_VEL/2;
-        public static final double FLY_MOTOR_JERK = 0;
+       // public static final double FLY_MOTOR_MAX_VEL = 50;
+       // public static final double FLY_MOTOR_ACCEL = FLY_MOTOR_MAX_VEL/2;
+       // public static final double FLY_MOTOR_JERK = 0;
 
         public static final double MAX_FLY_VEL = 94;
         public static final double MIN_FLY_VEL = 50;
-        public static final double FLY_MOTOR_NEAR_DIST_VEL = 50;
+        public static final double FLY_MOTOR_NEAR_DIST_VEL = 65;
         public static final double FLY_MOTOR_FAR_DIST_VEL = 90;
         public static final double FEED_MOTOR_TARGET_VEL = 195.0;
-        public static final double FLY_MOTOR_VEL_TOLERANCE = 50;
+        public static final double FLY_MOTOR_VEL_TOLERANCE = 1;
 
         public static final int LEFT_FEED_MOTOR_ID = 22;
         public static final int RIGHT_FEED_MOTOR_ID = 23;
@@ -619,8 +621,8 @@ public final class Constants {
              public static final int FEED_OUTPUT_MOTOR_LIMIT_FACTOR = 1;
 
              public static final NeutralModeValue FEED_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
-             public static final InvertedValue LEFT_FEED_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
-             public static final InvertedValue RIGHT_FEED_MOTOR_INVERT = InvertedValue.Clockwise_Positive;
+             public static final InvertedValue LEFT_FEED_MOTOR_INVERT = InvertedValue.Clockwise_Positive;
+             public static final InvertedValue RIGHT_FEED_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
 
              public static final double FEED_OPEN_LOOP_RAMP_PERIOD = 1.0;
              public static final double FEED_CLOSED_LOOP_RAMP_PERIOD = 0.0;

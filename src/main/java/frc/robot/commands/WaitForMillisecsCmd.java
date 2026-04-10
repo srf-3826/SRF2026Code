@@ -5,19 +5,15 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.SwerveSubsystem;
 
 public class WaitForMillisecsCmd extends Command {
-SwerveSubsystem m_swerve;
 long m_startTimeMs;
 long m_durationMs;
 
   /** Creates a new WaitForDriveCmd. */
-  public WaitForMillisecsCmd(SwerveSubsystem swerve, long milliseconds) {
+  public WaitForMillisecsCmd(long milliseconds) {
     // Use addRequirements() here to declare subsystem dependencies.
-    m_swerve = swerve;
     m_durationMs = milliseconds;
-    addRequirements(swerve);
   }
 
   // Called when the command is initially scheduled.

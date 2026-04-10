@@ -1,4 +1,4 @@
-package frc.robot.commands;
+/*package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants.ISC;
@@ -20,4 +20,14 @@ public class EjectIntakeCmd extends Command {
         m_intake.hopper_ExpelFuel();
         m_intake.intake_ExpelFuel();
     }
+    @Override
+    public boolean isFinished() {
+        double armpos = m_intake.arm_getPosition();
+        return(armpos < ISC.PIVOT_MOTOR_FLOOR_ANGLE+0.01)&&(armpos > ISC.PIVOT_MOTOR_FLOOR_ANGLE-0.01);
+    }
+    @Override
+    public void end(boolean interrupted) {
+        m_intake.arm_gotoFloorPickup();
+    }
 }
+*/

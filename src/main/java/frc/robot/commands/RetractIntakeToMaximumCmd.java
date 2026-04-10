@@ -4,20 +4,16 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants.ISC;
 import frc.robot.subsystems.IntakeSubsystem;
 
-// ONLY use this for the initial startup for the robot.
-public class DeployIntakeToHoldCmd extends Command {
+public class RetractIntakeToMaximumCmd extends Command {
     IntakeSubsystem m_intake;
-    public DeployIntakeToHoldCmd(IntakeSubsystem intake) {
+    public RetractIntakeToMaximumCmd(IntakeSubsystem intake) {
         m_intake = intake;
     }
     @Override
     public void execute() {
-        double armpos = m_intake.arm_getPosition();
-        if (armpos <= ISC.PIVOT_MOTOR_HOLD_ANGLE) {
-            m_intake.arm_initOverCenter();
-        } else {
-            m_intake.arm_gotoHold();
-        }
+        m_intake.arm_gotoRetract();
+        m_intake.hopper_Halt();
+        m_intake.intake_Halt();
     }
     @Override
     public boolean isFinished() {
@@ -26,7 +22,7 @@ public class DeployIntakeToHoldCmd extends Command {
     }
     @Override
     public void end(boolean interrupted) {
-        m_intake.arm_gotoHold();
+        m_intake.arm_gotoRetract();
     }
 }
 */
