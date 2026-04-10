@@ -22,7 +22,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 // import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.lib.Sensors.GyroIO;
+import frc.lib.sensors.GyroIO;
 // import frc.robot.autos.*;
 import frc.robot.Constants.*;
 import frc.robot.commands.*;

@@ -3,37 +3,27 @@ package frc.robot.subsystems;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers.LimelightResults;
 import frc.robot.LimelightHelpers;
-import frc.robot.LimelightHelpers.PoseEstimate;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import frc.robot.Constants.VC;
-import frc.robot.subsystems.TurretSubsystem;
 
 public class VisionSubsystem extends SubsystemBase {
     LimelightResults m_limelightResults;
     SwerveDrivePoseEstimator m_poseEstimator;
     SwerveSubsystem m_drivetrain;
     LimelightHelpers.IMUData imuData;
-    TurretSubsystem m_turret;
     public PoseClass poses;
     
-    public VisionSubsystem(SwerveDrivePoseEstimator poseEstimator, SwerveSubsystem drivetrain, TurretSubsystem turret)
+    public VisionSubsystem(SwerveDrivePoseEstimator poseEstimator, SwerveSubsystem drivetrain)
     {
         m_limelightResults = new LimelightResults();
         m_poseEstimator = poseEstimator;
         m_drivetrain = drivetrain;
-        m_turret = turret;
         imuData = new LimelightHelpers.IMUData();
         poses = new PoseClass();
-
-        Pose3d camPose = m_turret.getTurretDimensions();
-        setCameraPos(
-            camPose,
-            camPose.getRotation()
-        );
     }
 
     public void setCameraPos(Pose3d position, Rotation3d rotation)

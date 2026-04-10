@@ -1,4 +1,4 @@
-package frc.lib.Sensors;
+package frc.lib.sensors;
 
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.hardware.Pigeon2;
@@ -25,6 +25,7 @@ import frc.robot.Constants.GC;
 
 public class GyroIO {
     private Pigeon2     m_gyro;
+    @SuppressWarnings("unused")
     private boolean     m_isInverted;
     private double      m_now;
     private double      m_lastPubTime;

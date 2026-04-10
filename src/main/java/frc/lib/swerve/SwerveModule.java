@@ -1,6 +1,6 @@
 package frc.lib.swerve;
 
-import frc.lib.Sensors.Phoenix6SignalAdapters;
+import frc.lib.sensors.Phoenix6SignalAdapters;
 import frc.robot.Constants.*;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
