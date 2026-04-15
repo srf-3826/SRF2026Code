@@ -600,7 +600,7 @@ public final class Constants {
         public static final double FLY_MOTOR_NEAR_DIST_VEL = 65;
         public static final double FLY_MOTOR_FAR_DIST_VEL = 90;
         public static final double FEED_MOTOR_TARGET_VEL = 195.0;
-        public static final double FLY_MOTOR_VEL_TOLERANCE = 1;
+        public static final double FLY_MOTOR_VEL_TOLERANCE = 3;
 
         public static final int LEFT_FEED_MOTOR_ID = 22;
         public static final int RIGHT_FEED_MOTOR_ID = 23;

@@ -51,12 +51,15 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private enum ShootMode {
+      NONE,
       ONE,
       CONTINUOUS
     }
 
     private ShooterState  m_currentShooterState = ShooterState.IDLE;
-    private double        m_targetFlywheelVel = 0.0;                  // Start out stopped 
+    private ShootMode     m_shootMode = ShootMode.NONE;
+    private double        m_targetFlywheelVel = 0.0;                  // Start in stopped condition
+    private double        count = 0.0; 
 
     public ShooterSubsystem(CANBus shooterBus, IntakeSubsystem intakeSubsystem) {
         m_shooterBus = shooterBus;
@@ -100,7 +103,7 @@ public class ShooterSubsystem extends SubsystemBase {
   
       m_leftFlywheel.setControl(m_velocityVoltageRequest.withVelocity(m_targetFlywheelVel).withFeedForward(12));
       m_rightFlywheel.setControl(m_velocityVoltageRequest.withVelocity(m_targetFlywheelVel).withFeedForward(12));
-      System.out.println(m_leftFlywheel.getClosedLoopFeedForward());
+      System.out.println("Left Flywheel feed forward = "+m_leftFlywheel.getClosedLoopFeedForward());
       // Now set the shooterState to GOING_TO_TARGET_VEL
       // Note that when singleShot() and fireContinuous() methods
       // call this method (it is convenient for then to use this method to 
@@ -163,18 +166,22 @@ public class ShooterSubsystem extends SubsystemBase {
     public void shootContinuous() {
       // First do any validity checks
       // Then see if the flywheels are up to speed. If not, start them up.
+      System.out.println("Shoot continuous called. State = "+m_currentShooterState.toString());
+      m_shootMode = ShootMode.CONTINUOUS;
       if (m_currentShooterState != ShooterState.READY_TO_FIRE) { 
-        changeFlywheelTargetVel(m_targetFlywheelVel);
-        changeStateTo(ShooterState.WAITING_FOR_CONTINUOUS_FIRE);
+        changeFlywheelTargetVel(m_targetFlywheelVel);     // CHanges state to ShooterState.GOING_TO_TARGET_VEL
+        changeStateTo(ShooterState.WAITING_FOR_CONTINUOUS_FIRE); // So fix that
       } else {
-        // The following method changes the state for you
-        startShooting(ShootMode.CONTINUOUS);
+        // The following method changes the state to either ShooterState.SHOOT_ONE or ShooterState.SHOOT_CONTINUOUS
+        // depending on m_shootMode, which in this case is ShootMode.CONTINUOS
+        startShooting(m_shootMode);
       }
     }
 
     public void startShooting(ShootMode shootMode) {
       // No speed filters here - assume fully vetted shooter readiness,
       // which implies you should double check your code logic before calling!
+      System.out.println("Asking for hopper rollers on");
       m_intakeSubsystem.hopper_FeedFuelToShooter();
 
       if (shootMode == ShootMode.ONE) {
@@ -219,12 +226,12 @@ public class ShooterSubsystem extends SubsystemBase {
 
     // Provide separate getters() for areShootersReady() and isLeftShooterReady()
     public boolean areShootersReady() {
-        return (isWithinTolerance(m_rightFlywheel.getVelocity().getValueAsDouble())
+        return (isWithinTolerance(m_rpmRight)
                 && isLeftShooterReady());
     }
     
     public boolean isLeftShooterReady() {
-      return isWithinTolerance(m_leftFlywheel.getVelocity().getValueAsDouble());
+      return isWithinTolerance(m_rpmLeft);
     }
 
     // isWithinTolerance() is a helper method that uses a constant toleerance
@@ -246,6 +253,7 @@ public class ShooterSubsystem extends SubsystemBase {
     // Bind the demo stop shooting button (DPad-down) to this method.
     public void shutdownShooter() {
       // No vetting - just shhut everythign down immediately
+      m_shootMode = ShootMode.NONE;
       stopShooting();                // Stops feed motors and hopper rollers.
       m_leftFlywheel.stopMotor();
       m_rightFlywheel.stopMotor();
@@ -290,6 +298,12 @@ public class ShooterSubsystem extends SubsystemBase {
               // yes, ready to go, so startShooting (and continue "whileHeld")
               // The startShooting method changes the state
               startShooting(ShootMode.CONTINUOUS);
+            } else {
+              if (count++ % 10.0 < .001) {
+                System.out.println("Shooter not ready. Target = "+m_targetFlywheelVel+
+                " Curr Left = "+m_rpmLeft+
+                " Curr Right = "+m_rpmRight);
+              }
             }
             break;
 
@@ -307,6 +321,8 @@ public class ShooterSubsystem extends SubsystemBase {
             if (! areShootersReady()) {
               // the following method changes state to GOING_TO_TARGET_VEL
               changeFlywheelTargetVel(m_targetFlywheelVel);
+            } else if (m_shootMode == ShootMode.CONTINUOUS  || m_shootMode == ShootMode.ONE) {
+              startShooting(m_shootMode);
             }
             break;
 
@@ -332,8 +348,8 @@ public class ShooterSubsystem extends SubsystemBase {
     @Override
     public void periodic(){
       // This method will be called once per scheduler run
-      runShooterStateMachine();
       publishShooterData();
+      runShooterStateMachine();
     }
 
 /*
@@ -446,10 +462,10 @@ public class ShooterSubsystem extends SubsystemBase {
     // This method displays shooter data to provide the drive team / programmer a window 
     // into the ShooterSubsystem operation
     private void publishShooterData() {
-      m_rpmLeft = m_leftFlywheel.getVelocity().getValueAsDouble()*60;
-      m_rpmRight = m_rightFlywheel.getVelocity().getValueAsDouble()*60;
-      SmartDashboard.putNumber("Left RPM", m_rpmLeft);
-      SmartDashboard.putNumber("Right RPM", m_rpmRight);
+      m_rpmLeft = m_leftFlywheel.getVelocity().getValueAsDouble();
+      m_rpmRight = m_rightFlywheel.getVelocity().getValueAsDouble();
+      SmartDashboard.putNumber("Left RPS", m_rpmLeft);
+      SmartDashboard.putNumber("Right RPS", m_rpmRight);
       var m_currentLeft = m_leftFlywheel.getSupplyCurrent().getValueAsDouble();
       var m_currentRight = m_rightFlywheel.getSupplyCurrent().getValueAsDouble();
       SmartDashboard.putNumber("Left Current", m_currentLeft);

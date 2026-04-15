@@ -105,6 +105,7 @@ private CANBus m_intakeBus;
     }
 
     public void hopper_FeedFuelToShooter() {
+        System.out.println("Intake subsystem attempting to stsrt Hopper rollers");
         VelocityVoltage request = new VelocityVoltage(ISC.HOPPER_SPEED);
         m_hopper.setControl(request);
     }
