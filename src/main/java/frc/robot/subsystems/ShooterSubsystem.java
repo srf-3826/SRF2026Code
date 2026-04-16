@@ -2,20 +2,15 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusCode;
-// import com.ctre.phoenix6.configs.CANrangeConfiguration;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CommutationConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-// import com.ctre.phoenix6.configs.FovParamsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
-// import com.ctre.phoenix6.configs.ProximityParamsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TalonFXSConfiguration;
-// import com.ctre.phoenix6.configs.ToFParamsConfigs;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-// import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.hardware.TalonFXS;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -26,318 +21,225 @@ import frc.robot.Constants.*;
 
 public class ShooterSubsystem extends SubsystemBase {
     private IntakeSubsystem   m_intakeSubsystem;
-    private double    m_rpmLeft;
-    private double    m_rpmRight;
-    private TalonFX   m_leftFlywheel;
-    private TalonFX   m_rightFlywheel;
-    // private TalonFXS  m_leftFeedWheel;   // Note- post competition, left feed motor and CanRange sensor both removed.
-    private TalonFXS  m_rightFeedWheel;
+    private double    m_rpsLeftShooter;           // measured rps value
+    private double    m_rpsRightShooter;          // measured rps value
+    private TalonFX   m_leftShooter;              // Names for shooter motor controllers
+    private TalonFX   m_rightShooter;
+    private TalonFXS  m_feeder;                   // name for feed motor controller
     private CANBus    m_shooterBus;
-    // private CANrange  m_canrange;
     private VelocityVoltage m_velocityVoltageRequest = new VelocityVoltage(0);
 
      // --- Shooter state machine States ---
     private enum ShooterState {
       IDLE,                         // Motors stopped, or placed in coast mode to spin down on their own.
-      GOING_TO_TARGET_VEL,          // Spinning up (or down) to RPM
-      WAITING_FOR_SINGLE_SHOT,      // ramping to speed; change state to FIRING_ONE and turn on
-                                    // left feed motor and bed rollers (inward) when ready
-      WAITING_FOR_CONTINUOUS_FIRE,  // ramping to speed; change state to FIRING_CONTINUOUS and turn
-                                    // on bed rollers and feed wheels when ready
-      READY_TO_FIRE,                // At Target RPM, but not triggered to fire
-      FIRING_ONE,                   // Feed motor and bedmotors are on, waiting for "Fuel shot" sensor.
-                                    // On sensor event, change state to READ_TO_FIRE, turn off feed motor
-      FIRING_CONTINUOUS             // Keep all motors running, stop via manual control (Bumper release)
+      GOING_TO_TARGET_RPS,          // Spinning up (or down) to RPS. Turn off feeders and bed rollers.
+      READY_TO_FIRE,                // Not really needed for post-competition, but left just  in case
+                                    // we want to leave shooter flywheels running when not actually firing
+      FIRING_CONTINUOUS             // Turn on bed rollers and fuel Feeders, keep all motors 
+                                    // running until stopped via manual control
     }
 
-    private enum ShootMode {
-      NONE,
-      ONE,
-      CONTINUOUS
-    }
-
-    private ShooterState  m_currentShooterState = ShooterState.IDLE;
-    private ShootMode     m_shootMode = ShootMode.NONE;
-    private double        m_targetFlywheelVel = 0.0;                  // Start in stopped condition
-    private double        count = 0.0; 
-
+    private ShooterState  m_currentShooterState = ShooterState.IDLE;    // Start in IDLE state
+    private boolean       m_shooterTriggered = false;       // Set when shooter is triggered to start
+                                                            // clared when shooter is manually stopped
+    private double        m_shooterTargetRps = 0.0;         // Start with target rps 0, i.e. motor stopped
+    private double        count = 0.0;                      // Temp variable used to reduce 
+                                                            // debug trace statement output frequency
+    // This is the constructor for a ShooterSubsystem
+    // Inputs are the CANBus to use, and a handle to the IntakeSubsystem
+    // so thet the bed rollers can be syncronized with the ShooterSubsystem.
     public ShooterSubsystem(CANBus shooterBus, IntakeSubsystem intakeSubsystem) {
         m_shooterBus = shooterBus;
         m_intakeSubsystem = intakeSubsystem;
-        m_leftFlywheel   = new TalonFX(SSC.LEFT_SHOOTER_MOTOR_ID, m_shooterBus);
-        m_rightFlywheel  = new TalonFX(SSC.RIGHT_SHOOTER_MOTOR_ID, m_shooterBus);
-        // m_leftFeedWheel  = new TalonFXS(SSC.LEFT_FEED_MOTOR_ID, m_shooterBus);
-        m_rightFeedWheel = new TalonFXS(SSC.RIGHT_FEED_MOTOR_ID, m_shooterBus);
-        // m_canrange       = new CANrange(SSC.CANRANGE_ID, m_shooterBus);
-        configFlywheelMotor( m_leftFlywheel, InvertedValue.Clockwise_Positive);
-        configFlywheelMotor( m_rightFlywheel, InvertedValue.CounterClockwise_Positive);
-        // configFeedMotor(m_leftFeedWheel, SSC.LEFT_FEED_MOTOR_INVERT);
-        configFeedMotor(m_rightFeedWheel, SSC.RIGHT_FEED_MOTOR_INVERT);
-        // configCANRange();
-        changeStateTo(ShooterState.IDLE);
+        m_leftShooter   = new TalonFX(SSC.LEFT_SHOOTER_MOTOR_ID, m_shooterBus);
+        m_rightShooter  = new TalonFX(SSC.RIGHT_SHOOTER_MOTOR_ID, m_shooterBus);
+        m_feeder = new TalonFXS(SSC.FEED_MOTOR_ID, m_shooterBus);
+        configShooterMotor( m_leftShooter, InvertedValue.Clockwise_Positive);
+        configShooterMotor( m_rightShooter, InvertedValue.CounterClockwise_Positive);
+        configFeedMotor(m_feeder, SSC.FEED_MOTOR_INVERT);
+        changeStateTo(ShooterState.IDLE);   // State is already decalred IDLE, but 
+                                            // set to IDLE here anyway to get benefit of
+                                            // state change tracking.
     }
     
     // Always use this method to change the state. This can then serve as a 
-    // single point of contact gateway to do logging in the future.
+    // single gateway to do state change tracking, and logging in the future.
     private void changeStateTo(ShooterState newState) {
       m_currentShooterState = newState;
-      System.out.println(newState);
+      // Temp debug trace statement:
+      System.out.println("State changed from "+m_currentShooterState.toString()+" to "+newState.toString());
     }
 
-    public void changeFlywheelTargetVel(double vel) {
-      // Filter for reasonable values, and clamp if needed
-      System.out.println("Target Shooter Velocity Unclamped: " + vel);
-      if (vel > SSC.MAX_FLY_VEL) vel = SSC.MAX_FLY_VEL;
-      if (vel < SSC.MIN_FLY_VEL) vel = SSC.MIN_FLY_VEL;
-      System.out.println("Target Shooter Velocity Clamped: " + vel);
-      // Store the target velocity in a member variable - such member data memory is
-      // needed for increment and decrement adjustments in fixed 100 RPM steps, if used.
-      // It is also needed to return the flywheels to the previous target vel if they have been
-      // shut down for any reason.
-      m_targetFlywheelVel = vel;
+    // This method is called when it is deisred to either start up 
+    // the shooter wheels (using last active m_shooterTargetRps), 
+    // or to change their current velocity (in rps) (either to change
+    // between a near or far shot, or to incrment or 
+    // decrement the current shooter velocity for tuning purposes)
+    public void changeShooterTargetRps(double newRps) {
+      // Filter for reasonable values, and clamp between min and max if needed
+      // Temp debug trace statement:
+      System.out.println("New Target Shooter Rps before clamping: " + newRps);
+      if (newRps > SSC.MAX_SHOOTER_RPS) newRps = SSC.MAX_SHOOTER_RPS;
+      if (newRps < SSC.MIN_SHOOTER_RPS) newRps = SSC.MIN_SHOOTER_RPS;
+      // Temp debug trace statement:
+      System.out.println("New Target Shooter Velocity after clamping: " + newRps);
+      // Store the target velocity in a member variable to enable increment and 
+      // decrement adjustments and retained the adjusted target.
+      m_shooterTargetRps = newRps;
 
-      /* 
-      * left and right flywheels - no need to do just the left flywheel even for
-      * single shots - because those are used for ranging, and continuous shooting
-      * is expected shortly afterwards.*/
-  
-      m_leftFlywheel.setControl(m_velocityVoltageRequest.withVelocity(m_targetFlywheelVel).withFeedForward(12));
-      m_rightFlywheel.setControl(m_velocityVoltageRequest.withVelocity(m_targetFlywheelVel).withFeedForward(12));
-      System.out.println("Left Flywheel feed forward = "+m_leftFlywheel.getClosedLoopFeedForward());
-      // Now set the shooterState to GOING_TO_TARGET_VEL
-      // Note that when singleShot() and fireContinuous() methods
-      // call this method (it is convenient for then to use this method to 
-      // spin the flywheels up to the previously set target vel when needed), 
-      // they will immediately overwrite the state after return,
-      // so in the end three separate states may result after this call is
-      // invoked! This GOING_TO_TARGET_VEL state covers only the case where spin up
-      // is desired, but no SingleShot or ContinousShooting is pending.  
-      changeStateTo(ShooterState.GOING_TO_TARGET_VEL);
+      m_leftShooter.setControl(m_velocityVoltageRequest.withVelocity(m_shooterTargetRps).withFeedForward(12));
+      m_rightShooter.setControl(m_velocityVoltageRequest.withVelocity(m_shooterTargetRps).withFeedForward(12));
+      // Temp debug trace statement:
+      System.out.println("Left Shooter feed forward = "+m_leftShooter.getClosedLoopFeedForward());
+      // Finally set the shooterState to GOING_TO_TARGET_RPS
+      changeStateTo(ShooterState.GOING_TO_TARGET_RPS);
     }
 
-    // These next two methods are not really needed. Instead, you can bind the same
-    // changeFlywheelTargetVel() method to whatever inc and dec buttons are used, but
-    // passing in the respective constants used here as arguments in the binding calls.
-    public void spinUpFlywheelClose() {
-        changeFlywheelTargetVel(SSC.FLY_MOTOR_NEAR_DIST_VEL);
+    // These next two methods facilitate selecting near or far distances
+    // from shooter to goal.
+    public void spinUpShooterClose() {
+        changeShooterTargetRps(SSC.SHOOTER_NEAR_DIST_RPS);
     }
 
-    public void spinUpFlywheelFar() {
-        changeFlywheelTargetVel(SSC.FLY_MOTOR_FAR_DIST_VEL);
+    public void spinUpShooterFar() {
+        changeShooterTargetRps(SSC.SHOOTER_FAR_DIST_RPS);
     }
 
     // The folllowing two methods could be useful in tuning - not so much for
     // competition. Maybe bind to D-Pad buttons, but only during testing - uses too
-    // many button resources... 
-    public void incrementFlywheelVel() {
-      changeFlywheelTargetVel(m_targetFlywheelVel + 100.0/60);
+    // many button resources... Each call bumps the target setpoint RPS up or down by 100 RPM
+    public void incrementShooterVel() {
+      changeShooterTargetRps(m_shooterTargetRps + 100.0/60);
     }
 
-    public void decrementFlywheelVel() {
-      changeFlywheelTargetVel(m_targetFlywheelVel - 100.0/60);
+    public void decrementShooterVel() {
+      changeShooterTargetRps(m_shooterTargetRps - 100.0/60);
     }
 
-    // Bind this to the button that fires a signle shot (Button Y?)
-    // This entry point is the only way to initiate a single shot
-    // NOTE: without CANRange sensor, this method is Moot, so comment it out
-    /*
-    public void singleShot() {
-      // First do any validity checks potentially needed. For instance, 
-      // are there any states in which it would not be approriate to 
-      // allow a single shot?
-      // 
-      // Now check if the flywheel are up to speed, and if not get that going
-      if (m_currentShooterState != ShooterState.READY_TO_FIRE) {
-        changeFlywheelTargetVel(m_targetFlywheelVel);
-      }
-      // Finally set the state to WAITING_FOR_SINGLE_SHOT. We can't go directly
-      // to "startShooting" even if the flywheels are already up to speed, because
-      // there may not be a ball ("fuel") under the index wheel, ready to fire.  
-      // So just change the state and let the state machine handle that detail.
-      changeStateTo(ShooterState.WAITING_FOR_SINGLE_SHOT);
-    }
-    */
-        
-    // For competition, bind this method to the button that whileHeld causes 
-    // continuousShooting, with stop happening by releasing the buttom (ALT-RightBumper).
-    // Renamed from fireUntilEmpty because there is no empty sensor. 
-    // For parade / demo, change action to commence shooting on DPad-Up, 
-    // and then continue shooting until DPad-Down is pressed.
+    // The ShootContinuous method is bound to a game controller button,
+    // Shooting will continue until eihter the same game controller button 
+    // is released (for competition) or until a different game controller 
+    // button, which stops the shooting.
     public void shootContinuous() {
-      // First do any validity checks
-      // Then see if the flywheels are up to speed. If not, start them up.
+      // Debug tracer statement:
       System.out.println("Shoot continuous called. State = "+m_currentShooterState.toString());
-      m_shootMode = ShootMode.CONTINUOUS;
+
+      // This is the only place m_shooterTriggered is set to true:
+      m_shooterTriggered = true;
+
+      // See if the shooter wheels are up to speed. If not, start them up.
       if (m_currentShooterState != ShooterState.READY_TO_FIRE) { 
-        changeFlywheelTargetVel(m_targetFlywheelVel);     // CHanges state to ShooterState.GOING_TO_TARGET_VEL
-        changeStateTo(ShooterState.WAITING_FOR_CONTINUOUS_FIRE); // So fix that
+        changeShooterTargetRps(m_shooterTargetRps);     // CHanges state to ShooterState.GOING_TO_TARGET_RPS
+        changeStateTo(ShooterState.GOING_TO_TARGET_RPS); // So fix that
       } else {
-        // The following method changes the state to either ShooterState.SHOOT_ONE or ShooterState.SHOOT_CONTINUOUS
-        // depending on m_shootMode, which in this case is ShootMode.CONTINUOS
-        startShooting(m_shootMode);
+        // The shooter is already up to speed, so startShooting() (which changes the state).
+        startShooting();
       }
     }
 
-    public void startShooting(ShootMode shootMode) {
-      // No speed filters here - assume fully vetted shooter readiness,
-      // which implies you should double check your code logic before calling!
-      System.out.println("Asking for hopper rollers on");
+    public void startShooting() {
+      // No filters here - only called if shooter is READY_TO_FIRE.
+      // What needs doing here is to turn on the bed roller motor:
       m_intakeSubsystem.hopper_FeedFuelToShooter();
-
-      if (shootMode == ShootMode.ONE) {
-          // startLeftFeedMotor();
-          startRightFeedMotor();
-          changeStateTo(ShooterState.FIRING_ONE);
-      } else if (shootMode == ShootMode.CONTINUOUS) {
-          // startLeftFeedMotor();
-          startRightFeedMotor();
-          changeStateTo(ShooterState.FIRING_CONTINUOUS);
-      } else {
-          System.out.println("Invalid mode requested in ShooterSubsystem.startShooting()");
-      }
-    }
-/*
-    public void startLeftFeedMotor() {
-        VelocityVoltage request = new VelocityVoltage(SSC.FEED_MOTOR_TARGET_VEL);
-        m_leftFeedWheel.setControl(request);
-    }
-*/    
-    public void startRightFeedMotor() {
-        VelocityVoltage request = new VelocityVoltage(SSC.FEED_MOTOR_TARGET_VEL);
-        m_rightFeedWheel.setControl(request);
+      // and the feed motor:
+      startFeedMotor();
+      // and change the state appropriately:
+      changeStateTo(ShooterState.FIRING_CONTINUOUS);
     }
     
-    // The stopShooting() method stops both feed motors, but leaves the shooter flywheel motors
-    // running, and changes state to READY_TO_SHOOT. 
-    // To stop both feed and flywheel motors (in coast mode) call shutdownShooter instead.
-    // Bind the stopShooting() method to the RELEASE of whichever button is assigned to 
-    // the competition continuous shooting function (ALT - R_Bumper).
+    // The stopShooting() method stops the feed and hpper bed motors, 
+    // but leaves the shooter motors running, just changing state to READY_TO_FIRE. 
+    // To stop both feed and shooter motors call shutdownShooter instead (which
+    // in turn calls this method).
     public void stopShooting() {
-      // Are there any validity checks needed to vet this call? If not, or if checks pass, continue.
-      // m_leftFeedWheel.stopMotor();
-      m_rightFeedWheel.stopMotor();
+      m_shooterTriggered = false;
+      m_feeder.stopMotor();
       m_intakeSubsystem.hopper_Halt();
-      // Leave flywheels unchanged
+      // Leave flywheels unchanged, but change state to READY_TO_FIRE
+      // unless the state is currently IDLE
       if (m_currentShooterState != ShooterState.IDLE) {
-        changeStateTo(ShooterState.READY_TO_FIRE);    // Maybe a stretch, but should be harmless
+        changeStateTo(ShooterState.READY_TO_FIRE);
       }
-      // else leave state as IDLE
     }
 
-    // Provide separate getters() for areShootersReady() and isLeftShooterReady()
-    public boolean areShootersReady() {
-        return (isWithinTolerance(m_rpmRight)
-                && isLeftShooterReady());
-    }
-    
-    public boolean isLeftShooterReady() {
-      return isWithinTolerance(m_rpmLeft);
-    }
-
-    // isWithinTolerance() is a helper method that uses a constant toleerance
-    // (from SSC), and returns true if and only if the passed in flywheelVel velocity
-    // matches the global member variable targetVel within that tolerance.
-    // All units are rotations per second.
-    public boolean isWithinTolerance(double vel) {
-        // Inclusive check: lowerBound <= value <= upperBound
-        double lowerBound  = m_targetFlywheelVel - SSC.FLY_MOTOR_VEL_TOLERANCE;
-        double upperBound  = m_targetFlywheelVel + SSC.FLY_MOTOR_VEL_TOLERANCE;
-        return (vel >= lowerBound && vel <= upperBound);
-    }
-
-    public boolean isFuelAtLeftShooterSensor() {
-      // return (m_canrange.getDistance().getValueAsDouble() <= SSC.CANRANGE_FUEL_PRESENT_THRESHOLD);
-      return true;
-    }
-
-    // Bind the demo stop shooting button (DPad-down) to this method.
+    // The shutdownShooter method not only stops shooting, but also stops
+    // all motors, including the shooter flywheels. It is called only from 
+    // a bound button (i.e. there are no timeouts - to stop shooting is a manual
+    // input).
     public void shutdownShooter() {
-      // No vetting - just shhut everythign down immediately
-      m_shootMode = ShootMode.NONE;
-      stopShooting();                // Stops feed motors and hopper rollers.
-      m_leftFlywheel.stopMotor();
-      m_rightFlywheel.stopMotor();
-      changeStateTo(ShooterState.IDLE);
+      // No vetting - just shhut everything down immediately
+      stopShooting();                     // stop feed and hopper bed mootors, 
+                                          // and also clear m_shooterTriggered flag
+      m_leftShooter.stopMotor();          // Now stop the shooter motors
+      m_rightShooter.stopMotor();
+      changeStateTo(ShooterState.IDLE);   // And change state to IDLE
     }
     
+    // areShootersReady chacks both shooters for Rps being within tolerance of 
+    // the target Rps. Class member variables m_rpsLeftShooter and m_rpsRightShooter
+    // are read and stored once per loop by publishShooterData(), so no need to 
+    // re-read them again here.
+    public boolean areShootersReady() {
+      return (isWithinTolerance(m_rpsRightShooter)
+              &&
+              isWithinTolerance(m_rpsLeftShooter));
+    }
+
+    // isWithinTolerance() is a helper method that uses a specified Rps tolerance
+    // (from SSC - ShooterSubsystemConstants), and returns true if and only if 
+    // the passed in current shooter velocity matches the m_shooterTargetRps 
+    // within that tolerance.
+    public boolean isWithinTolerance(double rps) {
+        // Inclusive check: lowerBound <= value <= upperBound
+        double lowerBound  = m_shooterTargetRps - SSC.SHOOTER_RPS_TOLERANCE;
+        double upperBound  = m_shooterTargetRps + SSC.SHOOTER_RPS_TOLERANCE;
+        return (rps >= lowerBound && rps <= upperBound);
+    }
+
+    public void startFeedMotor() {
+        VelocityVoltage request = new VelocityVoltage(SSC.FEED_MOTOR_TARGET_RPS);
+        m_feeder.setControl(request);
+    }
+
     // runShooterStateMachine is the engine that makes everything run cleanly
-    // in sequence, loop to loop, every 20 ms. Called from periodic().
+    // in sequence, loop to loop, every 20 ms. It is called from periodic().
     public void runShooterStateMachine() {
         switch(m_currentShooterState) {
           case IDLE:
             // Nothing to do
             break;
 
-          case GOING_TO_TARGET_VEL:
+          case GOING_TO_TARGET_RPS:
             if (areShootersReady()) {
               changeStateTo(ShooterState.READY_TO_FIRE);
-            }
-            break;
-
-          // This legacy state should never be reached!!!
-          case WAITING_FOR_SINGLE_SHOT:
-            if (isFuelAtLeftShooterSensor()) {
-             // Stop left motor in case the fly motor is not ready
-                // m_leftFeedWheel.stopMotor();
-                // Now check if flywheel IS ready to shoot
-                if (isLeftShooterReady()) {
-                    // and if so, startShooting. That method changes the state
-                    startShooting(ShootMode.ONE);
-                }  // else not ready, so keep waiting
-            } else {
-              // fuel is not under the feed wheel and at the sensor, so get 
-              // that action started in case necessary. Then continue to wait
-              // in current state (it won't hurt to restart motor every loop until ready)
-              // startLeftFeedMotor();
-              m_intakeSubsystem.hopper_FeedFuelToShooter();
-            }
-            break;
-    
-          case WAITING_FOR_CONTINUOUS_FIRE:
-            if (areShootersReady()) {
-              // yes, ready to go, so startShooting (and continue "whileHeld")
-              // The startShooting method changes the state
-              startShooting(ShootMode.CONTINUOUS);
-            } else {
-              if (count++ % 10.0 < .001) {
-                System.out.println("Shooter not ready. Target = "+m_targetFlywheelVel+
-                " Curr Left = "+m_rpmLeft+
-                " Curr Right = "+m_rpmRight);
-              }
+            } else if (count++ % 10.0 < .001) {     // Decrease debug trace output frequency by 10
+              // Temp debug trace statement
+              System.out.println("Shooter not ready. Target rps = "+m_shooterTargetRps+
+                                 " Curr Left rps = "+m_rpsLeftShooter+
+                                 " Curr Right rps = "+m_rpsRightShooter);
             }
             break;
 
           case READY_TO_FIRE:
-            // Flywheels are supposed to be up to speed, but no firing is queued up, 
-            // so out of an abundance of attention to detail, do a check and if the 
-            // velocity is out of the acceptable range (i.e. out of TOLERANCE), 
-            // resstart the velocity PID control. Doing that changes the state to 
-            // GOING_TO_TARGET_VEL, but when the target velocity is reached, the 
-            // state machine automatically changes it back to READY_TO_FIRE. 
-            // Thus a badly controlled flywheel motor will result in a lot of
-            // ping-ponging between those two states. In a well controlled system,
-            // it will stay in the READY_TO_FIRE state until a shooting action is 
-            // triggered.
-            if (! areShootersReady()) {
-              // the following method changes state to GOING_TO_TARGET_VEL
-              changeFlywheelTargetVel(m_targetFlywheelVel);
-            } else if (m_shootMode == ShootMode.CONTINUOUS  || m_shootMode == ShootMode.ONE) {
-              startShooting(m_shootMode);
-            }
-            break;
-
-          case FIRING_ONE:
-            if (! isFuelAtLeftShooterSensor()) {
-              stopShooting();
+            // Shooters are up to speed. 
+            // If firing is queued up, switch to firing.
+            // Otherwise, just remain in this state until stopped  by manual input. 
+            // While here, check the velocity - if out of TOLERANCE, 
+            // repeat the changeShooterTargetRps request, which 
+            // while not really a change, will generate debug trace 
+            // outputs to alert us to less than ideal control.
+            if (m_shooterTriggered) {
+              startShooting();
+            } else if (! areShootersReady()) {
+              // the following method changes state to GOING_TO_TARGET_RPS
+              changeShooterTargetRps(m_shooterTargetRps);
             }
             break;
 
           case FIRING_CONTINUOUS:
-            // Nothing to do, except one might want to enforce a time limit.
-            // This state should be started only via a whileHeld button, 
-            // i.e. when that button is released, firing should be stopped and 
-            // the state changed back to READY_TO_FIRE (done in the method
-            // to which that released button is bound to (typ. stopShooting()).
+            // Nothing to do in this state except leave everthing running until
+            // stopped by manual input (handled by stopShooting() method, which changes
+            // the state)
             break;
 
           default:
@@ -345,46 +247,46 @@ public class ShooterSubsystem extends SubsystemBase {
         }
     }
 
+    // The periodic method is called once per loop
     @Override
     public void periodic(){
-      // This method will be called once per scheduler run
-      publishShooterData();
-      runShooterStateMachine();
+      publishShooterData();         // Call publish first so all variables are freshly read       
+      runShooterStateMachine();     // before running the state machine.
     }
 
 /*
  * Motor config methods
  */
-    private void configFlywheelMotor(TalonFX motor, InvertedValue invertDirection) {
+    private void configShooterMotor(TalonFX motor, InvertedValue invertDirection) {
         var openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
-                                                       .withVoltageOpenLoopRampPeriod(SSC.FLY_OPEN_LOOP_RAMP_PERIOD);
+                                                       .withVoltageOpenLoopRampPeriod(SSC.SHOOTER_OPEN_LOOP_RAMP_PERIOD);
                                                        //.withTorqueOpenLoopRampPeriod(0);
         var closedLoopConfig = new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0)
-                                                           .withVoltageClosedLoopRampPeriod(SSC.FLY_CLOSED_LOOP_RAMP_PERIOD)
+                                                           .withVoltageClosedLoopRampPeriod(SSC.SHOOTER_CLOSED_LOOP_RAMP_PERIOD)
                                                            .withTorqueClosedLoopRampPeriod(0);
         /*
         This config isnt needed if just using the rotor sensor
         var feedbackConfig = new FeedbackConfigs().withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
                                                   .withSensorToMechanismRatio(1)
-                                                  .withRotorToSensorRatio(SSC.FLY_GEAR_RATIO);
+                                                  .withRotorToSensorRatio(SSC.SHOOTER_GEAR_RATIO);
        */
-        var motorOutputConfig = new MotorOutputConfigs().withNeutralMode(SSC.FLY_MOTOR_NEUTRAL_MODE)
+        var motorOutputConfig = new MotorOutputConfigs().withNeutralMode(SSC.SHOOTER_NEUTRAL_MODE)
                                                         .withInverted(invertDirection)
-                                                        .withPeakForwardDutyCycle(SSC.FLY_OUTPUT_MOTOR_LIMIT_FACTOR)
-                                                        .withPeakReverseDutyCycle(-SSC.FLY_OUTPUT_MOTOR_LIMIT_FACTOR);
+                                                        .withPeakForwardDutyCycle(SSC.SHOOTER_OUTPUT_MOTOR_LIMIT)
+                                                        .withPeakReverseDutyCycle(-SSC.SHOOTER_OUTPUT_MOTOR_LIMIT);
                                                         //.withDutyCycleNeutralDeadband(.001);
         CurrentLimitsConfigs currentLimitConfig = new CurrentLimitsConfigs()
-                                                        .withSupplyCurrentLimit(SSC.FLY_MOTOR_SUPPLY_CURRENT_LIMIT)
-                                                        .withSupplyCurrentLimitEnable(SSC.FLY_ENABLE_SUPPLY_CURRENT_LIMIT)
-                                                        .withStatorCurrentLimit(SSC.FLY_STATOR_CURRENT_LIMIT)
-                                                        .withStatorCurrentLimitEnable(SSC.FLY_ENABLE_STATOR_CURRENT_LIMIT);
-        Slot0Configs pid0Configs = new Slot0Configs().withKP(SSC.FLY_MOTOR_KP)
-                                                     .withKI(SSC.FLY_MOTOR_KI)
-                                                     .withKD(SSC.FLY_MOTOR_KD)
-                                                     .withKS(SSC.FLY_MOTOR_KS)
-                                                     .withKV(SSC.FLY_MOTOR_KV)
-                                                     .withKA(SSC.FLY_MOTOR_KA)
-                                                     .withKG(SSC.FLY_MOTOR_KG);
+                                                        .withSupplyCurrentLimit(SSC.SHOOTER_SUPPLY_CURRENT_LIMIT)
+                                                        .withSupplyCurrentLimitEnable(SSC.SHOOTER_ENABLE_SUPPLY_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimit(SSC.SHOOTER_STATOR_CURRENT_LIMIT)
+                                                        .withStatorCurrentLimitEnable(SSC.SHOOTER_ENABLE_STATOR_CURRENT_LIMIT);
+        Slot0Configs pid0Configs = new Slot0Configs().withKP(SSC.SHOOTER_KP)
+                                                     .withKI(SSC.SHOOTER_KI)
+                                                     .withKD(SSC.SHOOTER_KD)
+                                                     .withKS(SSC.SHOOTER_KS)
+                                                     .withKV(SSC.SHOOTER_KV)
+                                                     .withKA(SSC.SHOOTER_KA)
+                                                     .withKG(SSC.SHOOTER_KG);
         var flyMotorConfig = new TalonFXConfiguration().withMotorOutput(motorOutputConfig)
                                                       .withCurrentLimits(currentLimitConfig)
                                                       .withOpenLoopRamps(openLoopConfig)
@@ -393,7 +295,7 @@ public class ShooterSubsystem extends SubsystemBase {
                                                       
         StatusCode status = motor.getConfigurator().apply(flyMotorConfig);
 
-        if (! status.isOK()) System.out.println("Flywheel motor "+motor.getDeviceID()+" config error: "
+        if (! status.isOK()) System.out.println("Shooter motor "+motor.getDeviceID()+" config error: "
                                                 +status.getDescription());
     }
 
@@ -412,10 +314,10 @@ public class ShooterSubsystem extends SubsystemBase {
         */
         MotorOutputConfigs motorOutputConfig = new MotorOutputConfigs().withNeutralMode(SSC.FEED_MOTOR_NEUTRAL_MODE)
                                                         .withInverted(invertDirection)
-                                                        .withPeakForwardDutyCycle(SSC.FEED_OUTPUT_MOTOR_LIMIT_FACTOR)
-                                                        .withPeakReverseDutyCycle(-SSC.FEED_OUTPUT_MOTOR_LIMIT_FACTOR);
+                                                        .withPeakForwardDutyCycle(SSC.FEED_MOTOR_OUTPUT_LIMIT)
+                                                        .withPeakReverseDutyCycle(-SSC.FEED_MOTOR_OUTPUT_LIMIT);
                                                         //.withDutyCycleNeutralDeadband(.001);
-        CurrentLimitsConfigs currentLimitConfig = new CurrentLimitsConfigs().withSupplyCurrentLimit(SSC.FEED_MOTOR_SUPPLY_CURRENT_LIMIT)
+        CurrentLimitsConfigs currentLimitConfig = new CurrentLimitsConfigs().withSupplyCurrentLimit(SSC.FEED_SUPPLY_CURRENT_LIMIT)
                                                                             .withSupplyCurrentLimitEnable(SSC.FEED_ENABLE_SUPPLY_CURRENT_LIMIT)
                                                                             .withStatorCurrentLimit(SSC.FEED_STATOR_CURRENT_LIMIT)
                                                                             .withStatorCurrentLimitEnable(SSC.FEED_ENABLE_STATOR_CURRENT_LIMIT);
@@ -462,12 +364,12 @@ public class ShooterSubsystem extends SubsystemBase {
     // This method displays shooter data to provide the drive team / programmer a window 
     // into the ShooterSubsystem operation
     private void publishShooterData() {
-      m_rpmLeft = m_leftFlywheel.getVelocity().getValueAsDouble();
-      m_rpmRight = m_rightFlywheel.getVelocity().getValueAsDouble();
-      SmartDashboard.putNumber("Left RPS", m_rpmLeft);
-      SmartDashboard.putNumber("Right RPS", m_rpmRight);
-      var m_currentLeft = m_leftFlywheel.getSupplyCurrent().getValueAsDouble();
-      var m_currentRight = m_rightFlywheel.getSupplyCurrent().getValueAsDouble();
+      m_rpsLeftShooter = m_leftShooter.getVelocity().getValueAsDouble();
+      m_rpsRightShooter = m_rightShooter.getVelocity().getValueAsDouble();
+      SmartDashboard.putNumber("Left RPS", m_rpsLeftShooter);
+      SmartDashboard.putNumber("Right RPS", m_rpsRightShooter);
+      var m_currentLeft = m_leftShooter.getSupplyCurrent().getValueAsDouble();
+      var m_currentRight = m_rightShooter.getSupplyCurrent().getValueAsDouble();
       SmartDashboard.putNumber("Left Current", m_currentLeft);
       SmartDashboard.putNumber("Right Current", m_currentRight);
     }

@@ -3,32 +3,20 @@ package frc.robot;
 import java.text.DecimalFormat;
 import java.util.Map;
 
-// import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
-// import com.ctre.phoenix6.signals.BrushedMotorWiringValue;
 import com.ctre.phoenix6.signals.InvertedValue;
-// import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
-import com.ctre.phoenix6.signals.UpdateModeValue;
 
-// import static edu.wpi.first.units.Units.Inches;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-// import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
-// import edu.wpi.first.units.measure.Angle;
-// import edu.wpi.first.units.measure.AngularVelocity;
-// import edu.wpi.first.units.measure.Current;
-// import edu.wpi.first.units.measure.Distance;
-// import edu.wpi.first.units.measure.Frequency;
-// import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
@@ -40,14 +28,12 @@ public final class Constants {
     /***************************************************
      * Universal Constants
      ***************************************************/
-    // public static final String CAN_BUS_FOR_SWERVE = "CANivore0";
     public static final String CAN_BUS_FOR_SWERVE = "CANivore0";
-    public static final String CAN_BUS_FOR_TURRET = "rio";
     public static final String CAN_BUS_FOR_EVERYTHING_ELSE = "Superstructure CANivore";
 
     public static final class F {
         // Formatters to control number of decimal places 
-        // in the various published / recorded data
+        // in the various published data
         public static DecimalFormat df0 = new DecimalFormat("#.");
         public static DecimalFormat df1 = new DecimalFormat("#.#");
         public static DecimalFormat df2 = new DecimalFormat("#.##");
@@ -251,15 +237,10 @@ public final class Constants {
         public static final boolean DRIVE_ENABLE_STATOR_CURRENT_LIMIT   = true;
 
         public static final double STEER_SUPPLY_CURRENT_LIMIT = 40.0;
-        public static final double STEER_SUPPLY_CURRENT_THRESHOLD = 0.0;
-        public static final double STEER_SUPPLY_CURRENT_TIME_THRESHOLD = 0.1;
         public static final boolean STEER_ENABLE_SUPPLY_CURRENT_LIMIT = true;
         public static final double STEER_STATOR_CURRENT_LIMIT = 60.0;
         public static final boolean STEER_ENABLE_STATOR_CURRENT_LIMIT = true;
         
-        // Voltage compensation
-        public static final double STEER_MOTOR_VOLTAGE_COMPENSATION = 12.0;
-
         // These values are used by the drive motor to ramp in open loop.
         // Team 364 found a small open loop ramp (0.25) helps with tread wear, 
         // avoiding tipping, etc. In closed loop control, it would probably be 
@@ -310,14 +291,6 @@ public final class Constants {
         public static final NeutralModeValue STEER_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast; // SparkBaseConfig.IdleMode.kCoast;
         public static final NeutralModeValue DRIVE_MOTOR_NEUTRAL_MODE = NeutralModeValue.Brake;
 
-        // Swerve rotate speed and extent during a parade WAVE function
-        public static final double WAVE_SWERVE_ROTATE_SPEED = 0.1;      // Percent simulated joystick input
-        public static final double WAVE_ROTATION_EXTENT = 70;           // Degree units per side, relative to 0 heading
-        public static final long   WAVE_ROTATION_PAUSE_IN_MS = 2500;    // Time in MS to stop rotating at limit
-                                                                        // and wave faster, before reverting to
-                                                                        // normal wave and rotating to other side
-                                                                        // See WaveCmd.java
-                                                                        
         // Finally, declare constants to define and allow addressing the (typically 4)
         // individual module components, including the Shuffleboard coordinates
         // embedded in the associated ShuffleboardLayout objects created for each
@@ -441,208 +414,181 @@ public final class Constants {
         public static final double AUTO_ACCEL_FACTOR_GENERIC = 1.0;
     }
 
-    public static final class ISC { //Intake Constants
-            public static final int INTAKE_PIVOT_MOTOR_ID = 10;
+    public static final class ISC {     //Intake Subsystem Constants
+        public static final int INTAKE_PIVOT_MOTOR_ID = 10;
 
-             public static final double PIVOT_GEAR_RATIO = 3*9*32/12;
-             public static final double PIVOT_GEAR_RATIO_INVERTED = 1/PIVOT_GEAR_RATIO;
+        public static final double PIVOT_GEAR_RATIO = 3*9*32/12;
+        public static final double PIVOT_GEAR_RATIO_INVERTED = 1/PIVOT_GEAR_RATIO;
 
-             public static final double PIVOT_MOTOR_KP = 9;
-             public static final double PIVOT_MOTOR_KI = 1.600000023841858;
-             public static final double PIVOT_MOTOR_KD = 0;
-             public static final double PIVOT_MOTOR_KS = 0.01953125;
-             public static final double PIVOT_MOTOR_KA = 3;
-             public static final double PIVOT_MOTOR_KV = 4.5;
-             public static final double PIVOT_MOTOR_KG = -0.400390625;
+        public static final double PIVOT_MOTOR_KP = 9;
+        public static final double PIVOT_MOTOR_KI = 1.600000023841858;
+        public static final double PIVOT_MOTOR_KD = 0;
+        public static final double PIVOT_MOTOR_KS = 0.01953125;
+        public static final double PIVOT_MOTOR_KA = 3;
+        public static final double PIVOT_MOTOR_KV = 4.5;
+        public static final double PIVOT_MOTOR_KG = -0.400390625;
 
-             // TODO: i picked safe values for this, but they are probably not optimal.
-             public static final double PIVOT_MOTOR_MAX_VEL = 0.1; 
-             public static final double PIVOT_MOTOR_ACCEL = 0.05;
+        // TODO: i picked safe values for this, but they are probably not optimal.
+        public static final double PIVOT_MOTOR_MAX_VEL = 0.1; 
+        public static final double PIVOT_MOTOR_ACCEL = 0.05;
 
-            // I dont think we need this, diminishing returns on smoothness
-             public static final double PIVOT_MOTOR_JERK = 0;
+        public static final NeutralModeValue PIVOT_MOTOR_NEUTRAL_MODE = NeutralModeValue.Brake;
+        public static final InvertedValue PIVOT_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
 
-             public static final int PIVOT_OUTPUT_MOTOR_LIMIT_FACTOR = 1;
+        public static final double PIVOT_OPEN_LOOP_RAMP_PERIOD = 1.0;
+        public static final double PIVOT_CLOSED_LOOP_RAMP_PERIOD = 0.0;
 
-             public static final NeutralModeValue PIVOT_MOTOR_NEUTRAL_MODE = NeutralModeValue.Brake;
-             public static final InvertedValue PIVOT_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
+        public static final boolean PIVOT_ENABLE_SUPPLY_CURRENT_LIMIT = true;
+        public static final double PIVOT_MOTOR_SUPPLY_CURRENT_LIMIT = 35.0;
+        public static final boolean PIVOT_ENABLE_STATOR_CURRENT_LIMIT = true;
+        public static final double PIVOT_STATOR_CURRENT_LIMIT = 60.0;    
 
-             public static final double PIVOT_OPEN_LOOP_RAMP_PERIOD = 1.0;
-             public static final double PIVOT_CLOSED_LOOP_RAMP_PERIOD = 0.0;
-
-             public static final boolean PIVOT_ENABLE_SUPPLY_CURRENT_LIMIT = true;
-             public static final double PIVOT_MOTOR_SUPPLY_CURRENT_LIMIT = 35.0;
-             public static final boolean PIVOT_ENABLE_STATOR_CURRENT_LIMIT = true;
-            public static final double PIVOT_STATOR_CURRENT_LIMIT = 60.0;    
-        
-
-            public static final int INTAKE_ROLLER_MOTOR_ID = 11; //TODO: Need to test out a PID for the intake rollers to fill in the data
-            
-             public static final double ROLLER_GEAR_RATIO = 9;
-             public static final double ROLLER_GEAR_RATIO_INVERTED = 1/ROLLER_GEAR_RATIO;
-
-             public static final double ROLLER_MOTOR_KP = 1;
-             public static final double ROLLER_MOTOR_KI = 0;
-             public static final double ROLLER_MOTOR_KD = 0;
-             public static final double ROLLER_MOTOR_KS = 0;
-             public static final double ROLLER_MOTOR_KA = 0;
-             public static final double ROLLER_MOTOR_KV = 0;
-             public static final double ROLLER_MOTOR_KG = 0;
-
-             public static final int ROLLER_OUTPUT_MOTOR_LIMIT_FACTOR = 1;
-
-             public static final NeutralModeValue ROLLER_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
-             public static final InvertedValue ROLLER_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
-
-             public static final double ROLLER_OPEN_LOOP_RAMP_PERIOD = 1.0;
-             public static final double ROLLER_CLOSED_LOOP_RAMP_PERIOD = 0.0;
-
-             public static final boolean ROLLER_ENABLE_SUPPLY_CURRENT_LIMIT = true;
-             public static final double ROLLER_MOTOR_SUPPLY_CURRENT_LIMIT = 25.0;
-             public static final boolean ROLLER_ENABLE_STATOR_CURRENT_LIMIT = true;
-            public static final double ROLLER_STATOR_CURRENT_LIMIT = 40.0;
-
-            public static final AdvancedHallSupportValue ROLLER_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
-            public static final MotorArrangementValue ROLLER_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.Minion_JST;
-
+        public static final int INTAKE_ROLLER_MOTOR_ID = 11; 
     
-            public static final int HOPPER_FLOOR_MOTOR_ID = 12; //TODO: Can likely just use DutyCycleOut for the hopper but still needs to be tested
-             public static final int HOPPER_GEAR_RATIO = 3;
-             public static final double HOPPER_GEAR_RATIO_INVERTED = 1/HOPPER_GEAR_RATIO;
+        public static final double ROLLER_GEAR_RATIO = 9;
+        public static final double ROLLER_GEAR_RATIO_INVERTED = 1/ROLLER_GEAR_RATIO;
 
-             public static final double HOPPER_MOTOR_KP = 1;
-             public static final double HOPPER_MOTOR_KI = 0;
-             public static final double HOPPER_MOTOR_KD = 0;
-             public static final double HOPPER_MOTOR_KS = 0;
-             public static final double HOPPER_MOTOR_KA = 0;
-             public static final double HOPPER_MOTOR_KV = 0;
-             public static final double HOPPER_MOTOR_KG = 0;
+        public static final double ROLLER_MOTOR_KP = 1;
+        public static final double ROLLER_MOTOR_KI = 0;
+        public static final double ROLLER_MOTOR_KD = 0;
+        public static final double ROLLER_MOTOR_KS = 0;
+        public static final double ROLLER_MOTOR_KA = 0;
+        public static final double ROLLER_MOTOR_KV = 0;
+        public static final double ROLLER_MOTOR_KG = 0;
 
-             public static final int HOPPER_OUTPUT_MOTOR_LIMIT_FACTOR = 1;
+        public static final NeutralModeValue ROLLER_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
+        public static final InvertedValue ROLLER_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
 
-             public static final NeutralModeValue HOPPER_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
-             public static final InvertedValue HOPPER_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
+        public static final double ROLLER_OPEN_LOOP_RAMP_PERIOD = 1.0;
+        public static final double ROLLER_CLOSED_LOOP_RAMP_PERIOD = 0.0;
 
-             public static final double HOPPER_OPEN_LOOP_RAMP_PERIOD = 1.0;
-             public static final double HOPPER_CLOSED_LOOP_RAMP_PERIOD = 0.0;
+        public static final boolean ROLLER_ENABLE_SUPPLY_CURRENT_LIMIT = true;
+        public static final double ROLLER_MOTOR_SUPPLY_CURRENT_LIMIT = 25.0;
+        public static final boolean ROLLER_ENABLE_STATOR_CURRENT_LIMIT = true;
+        public static final double ROLLER_STATOR_CURRENT_LIMIT = 40.0;
 
-             public static final boolean HOPPER_ENABLE_SUPPLY_CURRENT_LIMIT = true;
-             public static final double HOPPER_MOTOR_SUPPLY_CURRENT_LIMIT = 25.0;
-             public static final boolean HOPPER_ENABLE_STATOR_CURRENT_LIMIT = true;
-            public static final double HOPPER_STATOR_CURRENT_LIMIT = 35.0;
-
-            public static final AdvancedHallSupportValue HOPPER_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
-            public static final MotorArrangementValue HOPPER_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.NEO_JST;
-
-            public static final int ARM_ENCODER_ID = 13; //TODO: Need to grab the data off Tuner X for the offset and discontinuity point
-             public static final double ARM_ENCODER_MAGNET_OFFSET = 0.079833984375;
-             public static final double ARM_ABSOLUTE_SENSOR_DISCONTINUITY_POINT = 0.275146484375;
+        public static final AdvancedHallSupportValue ROLLER_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
+        public static final MotorArrangementValue ROLLER_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.Minion_JST;
 
 
-            public static final double PIVOT_MOTOR_FLOOR_ANGLE = -0.010498; // angle at pickup position
-            public static final double PIVOT_MOTOR_RETRACT_ANGLE = -0.247559; // angle at full retraction
-            public static final double PIVOT_MOTOR_HOLD_ANGLE = -0.1589; // angle at the cruising midpoint (just in front of hopper)
+        public static final int HOPPER_FLOOR_MOTOR_ID = 12; 
+        public static final int HOPPER_GEAR_RATIO = 3;
 
-            public static final double ROLLER_SPEED = 75; // TODO: dial this in
+        public static final double HOPPER_MOTOR_KP = 1;
+        public static final double HOPPER_MOTOR_KI = 0;
+        public static final double HOPPER_MOTOR_KD = 0;
+        public static final double HOPPER_MOTOR_KS = 0;
+        public static final double HOPPER_MOTOR_KA = 0;
+        public static final double HOPPER_MOTOR_KV = 0;
+        public static final double HOPPER_MOTOR_KG = 0;
 
-            public static final double HOPPER_SPEED = 20; // TODO: dial this in
-            public static final double EJECT_HOPPER_SPEED = 30; // TODO: dial this in
+        public static final double HOPPER_MOTOR_OUTPUT_LIMIT = 1.0;
 
-            public static final double HOPPER_MOTOR_MAX_VEL = 10;
-            public static final double HOPPER_MOTOR_ACCEL = 10;
-            public static final double HOPPER_MOTOR_JERK = 0;
+        public static final NeutralModeValue HOPPER_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
+        public static final InvertedValue HOPPER_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
 
-            public static final double ROLLER_MOTOR_MAX_VEL = 10;
-            public static final double ROLLER_MOTOR_ACCEL = 10;
-            public static final double ROLLER_MOTOR_JERK = 0;
+        public static final double HOPPER_OPEN_LOOP_RAMP_PERIOD = 1.0;
+        public static final double HOPPER_CLOSED_LOOP_RAMP_PERIOD = 0.0;
 
-            
+        public static final boolean HOPPER_ENABLE_SUPPLY_CURRENT_LIMIT = true;
+        public static final double HOPPER_MOTOR_SUPPLY_CURRENT_LIMIT = 25.0;
+        public static final boolean HOPPER_ENABLE_STATOR_CURRENT_LIMIT = true;
+        public static final double HOPPER_STATOR_CURRENT_LIMIT = 35.0;
+
+        public static final AdvancedHallSupportValue HOPPER_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
+        public static final MotorArrangementValue HOPPER_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.NEO_JST;
+
+        public static final int ARM_ENCODER_ID = 13;
+        public static final double ARM_ENCODER_MAGNET_OFFSET = 0.079833984375;
+        public static final double ARM_ABSOLUTE_SENSOR_DISCONTINUITY_POINT = 0.275146484375;
+
+        public static final double PIVOT_MOTOR_FLOOR_ANGLE = -0.010498; // angle at pickup position
+        public static final double PIVOT_MOTOR_RETRACT_ANGLE = -0.247559; // angle at full retraction
+        public static final double PIVOT_MOTOR_HOLD_ANGLE = -0.1589; // angle at the cruising midpoint (just in front of hopper)
+
+        public static final double ROLLER_SPEED = 75;
+
+        public static final double HOPPER_SPEED = 20;
+        public static final double EJECT_HOPPER_SPEED = 30;
+
+        public static final double HOPPER_MOTOR_MAX_VEL = 10;
+        public static final double HOPPER_MOTOR_ACCEL = 10;
+        public static final double HOPPER_MOTOR_JERK = 0;
+
+        public static final double ROLLER_MOTOR_MAX_VEL = 10;
+        public static final double ROLLER_MOTOR_ACCEL = 10;
+        public static final double ROLLER_MOTOR_JERK = 0;
     }
 
-    public static final class SSC {
+    public static final class SSC {     // Shooter subsystem constants
 
-        public static final double FLY_OPEN_LOOP_RAMP_PERIOD = 0;
-        public static final double FLY_CLOSED_LOOP_RAMP_PERIOD = 0;
+        public static final double SHOOTER_OPEN_LOOP_RAMP_PERIOD = 0;
+        public static final double SHOOTER_CLOSED_LOOP_RAMP_PERIOD = 0;
 
-        public static final InvertedValue FLY_RIGHT_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
-        public static final InvertedValue FLY_LEFT_MOTOR_INVERT = InvertedValue.Clockwise_Positive;
-        
+        public static final InvertedValue SHOOTER_RIGHT_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
+        public static final InvertedValue SHOOTER_LEFT_MOTOR_INVERT = InvertedValue.Clockwise_Positive;
         
         public static final int LEFT_SHOOTER_MOTOR_ID = 20;
         public static final int RIGHT_SHOOTER_MOTOR_ID = 21;
 
-        public static final double FLY_GEAR_RATIO = 1;
+        public static final double SHOOTER_GEAR_RATIO = 1;
 
-        public static final NeutralModeValue FLY_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
+        public static final NeutralModeValue SHOOTER_NEUTRAL_MODE = NeutralModeValue.Coast;
         
-        public static final int FLY_OUTPUT_MOTOR_LIMIT_FACTOR = 0;
+        public static final double  SHOOTER_SUPPLY_CURRENT_LIMIT = 35;
+        public static final boolean SHOOTER_ENABLE_SUPPLY_CURRENT_LIMIT = true;
 
-        public static final double FLY_MOTOR_SUPPLY_CURRENT_LIMIT = 35;
-        public static final boolean FLY_ENABLE_SUPPLY_CURRENT_LIMIT = true;
+        public static final double  SHOOTER_STATOR_CURRENT_LIMIT = 70;
+        public static final boolean SHOOTER_ENABLE_STATOR_CURRENT_LIMIT = true;
 
-        public static final double FLY_STATOR_CURRENT_LIMIT = 70;
-        public static final boolean FLY_ENABLE_STATOR_CURRENT_LIMIT = true;
+        public static final double SHOOTER_KP = 1;
+        public static final double SHOOTER_KI = 0;
+        public static final double SHOOTER_KD = 0;
+        public static final double SHOOTER_KS = 0;
+        public static final double SHOOTER_KV = 1.0;
+        public static final double SHOOTER_KA = 0.0;
+        public static final double SHOOTER_KG = 0;
 
-        public static final double FLY_MOTOR_KP = 1;
-        public static final double FLY_MOTOR_KI = 0;
-        public static final double FLY_MOTOR_KD = 0;
-        public static final double FLY_MOTOR_KS = 0;
-        public static final double FLY_MOTOR_KV = 1.0;
-        public static final double FLY_MOTOR_KA = 0.0;
-        public static final double FLY_MOTOR_KG = 0;
+        // Duty cycle output limit, +/-
+        public static final double SHOOTER_OUTPUT_MOTOR_LIMIT = 1.0;
 
-       // public static final double FLY_MOTOR_MAX_VEL = 50;
-       // public static final double FLY_MOTOR_ACCEL = FLY_MOTOR_MAX_VEL/2;
-       // public static final double FLY_MOTOR_JERK = 0;
+       // public static final double SHOOTER_MAX_RPS = 50;
+       // public static final double SHOOTER_ACCEL = SHOOTER_MAX_RPS/2;
+       // public static final double SHOOTER_JERK = 0;
 
-        public static final double MAX_FLY_VEL = 94;
-        public static final double MIN_FLY_VEL = 50;
-        public static final double FLY_MOTOR_NEAR_DIST_VEL = 65;
-        public static final double FLY_MOTOR_FAR_DIST_VEL = 90;
-        public static final double FEED_MOTOR_TARGET_VEL = 195.0;
-        public static final double FLY_MOTOR_VEL_TOLERANCE = 3;
+        public static final double MAX_SHOOTER_RPS = 94;
+        public static final double MIN_SHOOTER_RPS = 50;
+        public static final double SHOOTER_NEAR_DIST_RPS = 65;
+        public static final double SHOOTER_FAR_DIST_RPS = 90;
+        public static final double SHOOTER_RPS_TOLERANCE = 3;
 
-        public static final int LEFT_FEED_MOTOR_ID = 22;
-        public static final int RIGHT_FEED_MOTOR_ID = 23;
-            
-            public static final AdvancedHallSupportValue FEED_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
-            public static final MotorArrangementValue FEED_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.NEO550_JST;
-             public static final double FEED_GEAR_RATIO = 10;
-             public static final double FEED_GEAR_RATIO_INVERTED = 1/FEED_GEAR_RATIO;
+        public static final int FEED_MOTOR_ID = 23;
+        public static final double FEED_MOTOR_TARGET_RPS = 195.0;            
+        public static final AdvancedHallSupportValue FEED_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
+        public static final MotorArrangementValue FEED_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.NEO550_JST;
+        public static final double FEED_GEAR_RATIO = 10;
+        public static final double FEED_GEAR_RATIO_INVERTED = 1/FEED_GEAR_RATIO;
 
-             public static final double FEED_MOTOR_KP = 1;
-             public static final double FEED_MOTOR_KI = 0;
-             public static final double FEED_MOTOR_KD = 0;
-             public static final double FEED_MOTOR_KS = 0;
-             public static final double FEED_MOTOR_KA = 0;
-             public static final double FEED_MOTOR_KV = 0;
-             public static final double FEED_MOTOR_KG = 0;
+        public static final double FEED_MOTOR_KP = 1;
+        public static final double FEED_MOTOR_KI = 0;
+        public static final double FEED_MOTOR_KD = 0;
+        public static final double FEED_MOTOR_KS = 0;
+        public static final double FEED_MOTOR_KA = 0;
+        public static final double FEED_MOTOR_KV = 0;
+        public static final double FEED_MOTOR_KG = 0;
 
-             public static final int FEED_OUTPUT_MOTOR_LIMIT_FACTOR = 1;
+        public static final double FEED_MOTOR_OUTPUT_LIMIT = 1.0;
 
-             public static final NeutralModeValue FEED_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
-             public static final InvertedValue LEFT_FEED_MOTOR_INVERT = InvertedValue.Clockwise_Positive;
-             public static final InvertedValue RIGHT_FEED_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
+        public static final NeutralModeValue FEED_MOTOR_NEUTRAL_MODE = NeutralModeValue.Coast;
+        public static final InvertedValue FEED_MOTOR_INVERT = InvertedValue.CounterClockwise_Positive;
 
-             public static final double FEED_OPEN_LOOP_RAMP_PERIOD = 1.0;
-             public static final double FEED_CLOSED_LOOP_RAMP_PERIOD = 0.0;
-             public static final boolean FEED_ENABLE_SUPPLY_CURRENT_LIMIT = true;
-             public static final double FEED_MOTOR_SUPPLY_CURRENT_LIMIT = 15.0;
-             public static final boolean FEED_ENABLE_STATOR_CURRENT_LIMIT = true;
-            public static final double FEED_STATOR_CURRENT_LIMIT = 25.0;
+        public static final double FEED_OPEN_LOOP_RAMP_PERIOD = 1.0;
+        public static final double FEED_CLOSED_LOOP_RAMP_PERIOD = 0.0;
 
-        public static final int CANRANGE_ID = 24;
-
-            public static final double CANRANGE_FOV_CENTER_X_ANGLE = 0;
-            public static final double CANRANGE_FOV_CENTER_Y_ANGLE = 0;
-            public static final double CANRANGE_FOV_RANGE_X_ANGLE = 27;
-            public static final double CANRANGE_FOV_RANGE_Y_ANGLE = 27;
-
-            public static final double CANRANGE_MINIMUM_SIGNAL = 2500;
-            public static final double CANRANGE_PROXIMITY_HYSTERESIS = 0.009999999776482582;
-            public static final double CANRANGE_FUEL_PRESENT_THRESHOLD = 0.15000000596046448;
-            public static final double CANRANGE_UPDATE_FREQUENCY = 50;
-            public static final UpdateModeValue CANRANGE_UPDATE_MODE = UpdateModeValue.ShortRange100Hz;
+        public static final boolean FEED_ENABLE_SUPPLY_CURRENT_LIMIT = true;
+        public static final double FEED_SUPPLY_CURRENT_LIMIT = 15.0;
+        public static final boolean FEED_ENABLE_STATOR_CURRENT_LIMIT = true;
+        public static final double FEED_STATOR_CURRENT_LIMIT = 25.0;
     }
     
     public static final class VC { //Vision Constants

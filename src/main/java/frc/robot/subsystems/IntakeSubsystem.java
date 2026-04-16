@@ -2,9 +2,7 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.hardware.TalonFXS;
 
-// import frc.robot.Constants;
-// import frc.robot.Robot;
-// import frc.robot.RobotContainer;
+// TODO: refactor commented out code for renamed constants
 import frc.robot.Constants.*;
 // import com.ctre.phoenix6.hardware.TalonFX;
 // import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
@@ -20,25 +18,25 @@ import com.ctre.phoenix6.controls.*;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusCode;
 
-import edu.wpi.first.math.controller.PIDController;
+// import edu.wpi.first.math.controller.PIDController;
 // import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /*
  * Modified 4/9/2026 to operate hopper bed rollers ONLY
- * For Parade and demo purposes. Code for handling intake arm and rollers
- * is still there, but commented out.
+ * For Parade and demo purposes. Code for pivoting the intake arm 
+ * and rollers is still there, but commented out.
  */
 
 public class IntakeSubsystem extends SubsystemBase {
-public Boolean intake_is_at_pickup;
-public Boolean intake_is_at_hold;
+// public Boolean intake_is_at_pickup;
+// public Boolean intake_is_at_hold;
 
-PIDController initial_overCenterPID;
+// PIDController initial_overCenterPID;
 
-// private TalonFX m_arm ; // 2.5:1 on a 27:1, kraken
-// private TalonFXS m_rollers; // 9:1, minion
-private TalonFXS m_hopper; // gear ration 3:1, neo
+// private TalonFX   m_arm ; // 2.5:1 on a 27:1, kraken
+// private TalonFXS  m_rollers; // 9:1, minion
+private TalonFXS     m_hopper; // gear ration 3:1, neo
 // private CANcoder m_encoder;
 private CANBus m_intakeBus;
 // private VelocityVoltage m_control_roller;
@@ -81,14 +79,15 @@ private CANBus m_intakeBus;
         return m_arm.getPosition(true).getValueAsDouble();
     }
     
-   
     public void intake_ExpelFuel() {
         VelocityVoltage request = new VelocityVoltage(0);
         m_rollers.setControl(request.withVelocity(-ISC.ROLLER_SPEED));
     }
+
     public void intake_Halt() {
     m_rollers.stopMotor();
     }
+
     public void intake_IntakeFuel() {
         VelocityVoltage request = new VelocityVoltage(0);
         m_rollers.setControl(request.withVelocity(ISC.ROLLER_SPEED));
@@ -98,18 +97,17 @@ private CANBus m_intakeBus;
     VelocityVoltage request = new VelocityVoltage(0);
         m_hopper.setControl(request.withVelocity(-ISC.EJECT_HOPPER_SPEED));
     }
-
 */
     public void hopper_Halt() {
         m_hopper.stopMotor();
     }
 
     public void hopper_FeedFuelToShooter() {
-        System.out.println("Intake subsystem attempting to stsrt Hopper rollers");
+        // Temp debug trace statement
+        System.out.println("Intake subsystem starting Hopper rollers");
         VelocityVoltage request = new VelocityVoltage(ISC.HOPPER_SPEED);
         m_hopper.setControl(request);
     }
-
 /*
     private void configPivotMotor() {
         var openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
@@ -159,7 +157,7 @@ private CANBus m_intakeBus;
                                                 +status.getDescription());
     }
 
-     private void configRollerMotor() {
+    private void configRollerMotor() {
         OpenLoopRampsConfigs openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
                                                        .withVoltageOpenLoopRampPeriod(ISC.ROLLER_OPEN_LOOP_RAMP_PERIOD);
                                                        //.withTorqueOpenLoopRampPeriod(0);
@@ -216,8 +214,8 @@ private CANBus m_intakeBus;
                                                   .withRotorToSensorRatio(1.0);
         MotorOutputConfigs motorOutputConfig = new MotorOutputConfigs().withNeutralMode(ISC.HOPPER_MOTOR_NEUTRAL_MODE)
                                                         .withInverted(ISC.HOPPER_MOTOR_INVERT)
-                                                        .withPeakForwardDutyCycle(ISC.HOPPER_OUTPUT_MOTOR_LIMIT_FACTOR)
-                                                        .withPeakReverseDutyCycle(-ISC.HOPPER_OUTPUT_MOTOR_LIMIT_FACTOR);
+                                                        .withPeakForwardDutyCycle(ISC.HOPPER_MOTOR_OUTPUT_LIMIT)
+                                                        .withPeakReverseDutyCycle(-ISC.HOPPER_MOTOR_OUTPUT_LIMIT);
                                                         //.withDutyCycleNeutralDeadband(.001);
         CurrentLimitsConfigs currentLimitConfig = new CurrentLimitsConfigs()
                                                         .withSupplyCurrentLimit(ISC.HOPPER_MOTOR_SUPPLY_CURRENT_LIMIT)
