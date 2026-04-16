@@ -15,6 +15,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.hardware.TalonFXS;
 import com.ctre.phoenix6.signals.InvertedValue;
 
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.*;
@@ -27,9 +28,17 @@ public class ShooterSubsystem extends SubsystemBase {
     private TalonFX   m_rightShooter;
     private TalonFXS  m_feeder;                   // name for feed motor controller
     private CANBus    m_shooterBus;
-    private VelocityVoltage m_velocityVoltageRequest = new VelocityVoltage(0);
 
-     // --- Shooter state machine States ---
+    // Shooter motor control support 
+    private VelocityVoltage m_velocityVoltageRequest = new VelocityVoltage(0);
+    private SimpleMotorFeedforward m_leftShooterFF = new SimpleMotorFeedforward(SSC.SHOOTER_KS, 
+                                                                                SSC.SHOOTER_KV,
+                                                                                SSC.SHOOTER_KA);
+    private SimpleMotorFeedforward m_rightShooterFF = new SimpleMotorFeedforward(SSC.SHOOTER_KS, 
+                                                                                 SSC.SHOOTER_KV,
+                                                                                 SSC.SHOOTER_KA);
+
+    // --- Shooter state machine enumerated States ---
     private enum ShooterState {
       IDLE,                         // Motors stopped, or placed in coast mode to spin down on their own.
       GOING_TO_TARGET_RPS,          // Spinning up (or down) to RPS. Turn off feeders and bed rollers.
@@ -70,52 +79,12 @@ public class ShooterSubsystem extends SubsystemBase {
       System.out.println("State changed from "+m_currentShooterState.toString()+" to "+newState.toString());
     }
 
-    // This method is called when it is deisred to either start up 
-    // the shooter wheels (using last active m_shooterTargetRps), 
-    // or to change their current velocity (in rps) (either to change
-    // between a near or far shot, or to incrment or 
-    // decrement the current shooter velocity for tuning purposes)
-    public void changeShooterTargetRps(double newRps) {
-      // Filter for reasonable values, and clamp between min and max if needed
-      // Temp debug trace statement:
-      System.out.println("New Target Shooter Rps before clamping: " + newRps);
-      if (newRps > SSC.MAX_SHOOTER_RPS) newRps = SSC.MAX_SHOOTER_RPS;
-      if (newRps < SSC.MIN_SHOOTER_RPS) newRps = SSC.MIN_SHOOTER_RPS;
-      // Temp debug trace statement:
-      System.out.println("New Target Shooter Velocity after clamping: " + newRps);
-      // Store the target velocity in a member variable to enable increment and 
-      // decrement adjustments and retained the adjusted target.
-      m_shooterTargetRps = newRps;
-
-      m_leftShooter.setControl(m_velocityVoltageRequest.withVelocity(m_shooterTargetRps).withFeedForward(12));
-      m_rightShooter.setControl(m_velocityVoltageRequest.withVelocity(m_shooterTargetRps).withFeedForward(12));
-      // Temp debug trace statement:
-      System.out.println("Left Shooter feed forward = "+m_leftShooter.getClosedLoopFeedForward());
-      // Finally set the shooterState to GOING_TO_TARGET_RPS
-      changeStateTo(ShooterState.GOING_TO_TARGET_RPS);
-    }
-
-    // These next two methods facilitate selecting near or far distances
-    // from shooter to goal.
-    public void spinUpShooterClose() {
-        changeShooterTargetRps(SSC.SHOOTER_NEAR_DIST_RPS);
-    }
-
-    public void spinUpShooterFar() {
-        changeShooterTargetRps(SSC.SHOOTER_FAR_DIST_RPS);
-    }
-
-    // The folllowing two methods could be useful in tuning - not so much for
-    // competition. Maybe bind to D-Pad buttons, but only during testing - uses too
-    // many button resources... Each call bumps the target setpoint RPS up or down by 100 RPM
-    public void incrementShooterVel() {
-      changeShooterTargetRps(m_shooterTargetRps + 100.0/60);
-    }
-
-    public void decrementShooterVel() {
-      changeShooterTargetRps(m_shooterTargetRps - 100.0/60);
-    }
-
+    //****************************************************************
+    //
+    // Public methods providing UI Control of the ShooterSubsystem
+    //
+    //****************************************************************
+    
     // The ShootContinuous method is bound to a game controller button,
     // Shooting will continue until eihter the same game controller button 
     // is released (for competition) or until a different game controller 
@@ -174,12 +143,76 @@ public class ShooterSubsystem extends SubsystemBase {
       m_rightShooter.stopMotor();
       changeStateTo(ShooterState.IDLE);   // And change state to IDLE
     }
+   
+       // These next two methods facilitate selecting near or far distances
+    // from shooter to goal.
+    public void spinUpShooterClose() {
+        changeShooterTargetRps(SSC.SHOOTER_NEAR_DIST_RPS);
+    }
+
+    public void spinUpShooterFar() {
+        changeShooterTargetRps(SSC.SHOOTER_FAR_DIST_RPS);
+    }
+
+    // The folllowing two methods could be useful in tuning - not so much for
+    // competition. Maybe bind to D-Pad buttons, but only during testing - uses too
+    // many button resources... Each call bumps the target setpoint RPS up or down by 100 RPM
+    public void incrementShooterVel() {
+      changeShooterTargetRps(m_shooterTargetRps + 100.0/60);
+    }
+
+    public void decrementShooterVel() {
+      changeShooterTargetRps(m_shooterTargetRps - 100.0/60);
+    }
+    
+    //============================================================
+    //
+    // private methods in support of ShooterSubsystem operation
+    //
+    //============================================================
+
+    // This method is called when it is deisred to either start up 
+    // the shooter wheels (passing in either a new or the last active 
+    // m_shooterTargetRps), or to change the target velocity (in rps) 
+    // of shooter wheels that are already running. For example, to change
+    // between a near or far shot, or to incrment or 
+    // decrement the current shooter velocity for tuning purposes.
+    // This is the only method where control directives are issued to the 
+    // shooter wheel motor controllers.
+    private void changeShooterTargetRps(double newRps) {
+      double leftVelFeedforward;
+      double rightVelFeedforward;
+      // Filter for reasonable values, and clamp between min and max if needed
+      // Temp debug trace statement:
+      System.out.println("New Target Shooter Rps before clamping: " + newRps);
+      if (newRps > SSC.MAX_SHOOTER_RPS) newRps = SSC.MAX_SHOOTER_RPS;
+      if (newRps < SSC.MIN_SHOOTER_RPS) newRps = SSC.MIN_SHOOTER_RPS;
+      // Temp debug trace statement:
+      System.out.println("New Target Shooter Velocity after clamping: " + newRps);
+      // Store the target velocity in a member variable to enable increment and 
+      // decrement adjustments and retained the adjusted target.
+      m_shooterTargetRps = newRps;
+
+      leftVelFeedforward = m_leftShooterFF.calculateWithVelocities(m_rpsLeftShooter, m_shooterTargetRps);
+      rightVelFeedforward = m_rightShooterFF.calculateWithVelocities(m_rpsRightShooter, m_shooterTargetRps);
+      // Temp debug trace statement
+      System.out.println("Calculated Shooter Feedforwards - left: "+leftVelFeedforward+" right: "+rightVelFeedforward);
+      m_leftShooter.setControl(m_velocityVoltageRequest.withVelocity(m_shooterTargetRps)
+                                                       .withFeedForward(leftVelFeedforward));
+      m_rightShooter.setControl(m_velocityVoltageRequest.withVelocity(m_shooterTargetRps)
+                                                        .withFeedForward(rightVelFeedforward));
+      // Temp debug trace statement:
+      System.out.println("Readback Shooter Feedforwards - left: "
+                          +m_leftShooter.getClosedLoopFeedForward()
+                          +" right: "
+                          +m_rightShooter.getClosedLoopFeedForward());
+    }
     
     // areShootersReady chacks both shooters for Rps being within tolerance of 
     // the target Rps. Class member variables m_rpsLeftShooter and m_rpsRightShooter
     // are read and stored once per loop by publishShooterData(), so no need to 
     // re-read them again here.
-    public boolean areShootersReady() {
+    private boolean areShootersReady() {
       return (isWithinTolerance(m_rpsRightShooter)
               &&
               isWithinTolerance(m_rpsLeftShooter));
@@ -189,21 +222,21 @@ public class ShooterSubsystem extends SubsystemBase {
     // (from SSC - ShooterSubsystemConstants), and returns true if and only if 
     // the passed in current shooter velocity matches the m_shooterTargetRps 
     // within that tolerance.
-    public boolean isWithinTolerance(double rps) {
+    private boolean isWithinTolerance(double rps) {
         // Inclusive check: lowerBound <= value <= upperBound
         double lowerBound  = m_shooterTargetRps - SSC.SHOOTER_RPS_TOLERANCE;
         double upperBound  = m_shooterTargetRps + SSC.SHOOTER_RPS_TOLERANCE;
         return (rps >= lowerBound && rps <= upperBound);
     }
 
-    public void startFeedMotor() {
+    private void startFeedMotor() {
         VelocityVoltage request = new VelocityVoltage(SSC.FEED_MOTOR_TARGET_RPS);
         m_feeder.setControl(request);
     }
 
     // runShooterStateMachine is the engine that makes everything run cleanly
     // in sequence, loop to loop, every 20 ms. It is called from periodic().
-    public void runShooterStateMachine() {
+    private void runShooterStateMachine() {
         switch(m_currentShooterState) {
           case IDLE:
             // Nothing to do
@@ -254,9 +287,9 @@ public class ShooterSubsystem extends SubsystemBase {
       runShooterStateMachine();     // before running the state machine.
     }
 
-/*
- * Motor config methods
- */
+  /*
+   * Motor config methods
+   */
     private void configShooterMotor(TalonFX motor, InvertedValue invertDirection) {
         var openLoopConfig = new OpenLoopRampsConfigs().withDutyCycleOpenLoopRampPeriod(0)
                                                        .withVoltageOpenLoopRampPeriod(SSC.SHOOTER_OPEN_LOOP_RAMP_PERIOD);
@@ -340,27 +373,6 @@ public class ShooterSubsystem extends SubsystemBase {
                                                 +status.getDescription());
     }
 
-    /*
-     * CANRange sensor has been disconnected
-    
-    private void configCANRange() {
-       FovParamsConfigs fovParamsConfig = new FovParamsConfigs().withFOVCenterX(SSC.CANRANGE_FOV_CENTER_X_ANGLE)
-                                                                .withFOVCenterY(SSC.CANRANGE_FOV_CENTER_Y_ANGLE)
-                                                                .withFOVRangeX(SSC.CANRANGE_FOV_RANGE_X_ANGLE)
-                                                                .withFOVRangeY(SSC.CANRANGE_FOV_RANGE_Y_ANGLE);
-        ProximityParamsConfigs proximityParamsConfigs = new ProximityParamsConfigs().withMinSignalStrengthForValidMeasurement(SSC.CANRANGE_MINIMUM_SIGNAL)
-                                                                                    .withProximityHysteresis(SSC.CANRANGE_PROXIMITY_HYSTERESIS)
-                                                                                    .withProximityThreshold(SSC.CANRANGE_FUEL_PRESENT_THRESHOLD);
-        ToFParamsConfigs tofParamsConfigs = new ToFParamsConfigs().withUpdateFrequency(SSC.CANRANGE_UPDATE_FREQUENCY)
-                                                                  .withUpdateMode(SSC.CANRANGE_UPDATE_MODE);
-        var canrangeConfig = new CANrangeConfiguration().withFovParams(fovParamsConfig)
-                                                        .withProximityParams(proximityParamsConfigs)
-                                                        .withToFParams(tofParamsConfigs);
-        StatusCode status = m_canrange.getConfigurator().apply(canrangeConfig);
-            if (! status.isOK()) System.out.println("CANrange config "
-                                                    +status.getDescription());
-    }  
-*/
     // This method displays shooter data to provide the drive team / programmer a window 
     // into the ShooterSubsystem operation
     private void publishShooterData() {
