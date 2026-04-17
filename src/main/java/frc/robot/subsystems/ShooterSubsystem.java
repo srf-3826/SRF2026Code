@@ -49,11 +49,12 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private ShooterState  m_currentShooterState = ShooterState.IDLE;    // Start in IDLE state
-    private boolean       m_shooterTriggered = false;       // Set when shooter is triggered to start
-                                                            // clared when shooter is manually stopped
-    private double        m_shooterTargetRps = 0.0;         // Start with target rps 0, i.e. motor stopped
-    private double        count = 0.0;                      // Temp variable used to reduce 
-                                                            // debug trace statement output frequency
+    private boolean       m_shooterTriggered = false;                   // Set when shooter is triggered to start
+                                                                        // cleared when shooter is manually stopped
+    private double        m_shooterTargetRps = SSC.SHOOTER_FAR_DIST_RPS;  // Start with target rps 0, i.e. motor stopped
+    private double        count = 0.0;                                  // Temp variable used to reduce 
+                                                                        // debug trace statement output frequency
+                                                                        // while shooter is spinning up.
     // This is the constructor for a ShooterSubsystem
     // Inputs are the CANBus to use, and a handle to the IntakeSubsystem
     // so thet the bed rollers can be syncronized with the ShooterSubsystem.
@@ -74,9 +75,9 @@ public class ShooterSubsystem extends SubsystemBase {
     // Always use this method to change the state. This can then serve as a 
     // single gateway to do state change tracking, and logging in the future.
     private void changeStateTo(ShooterState newState) {
-      m_currentShooterState = newState;
       // Temp debug trace statement:
       System.out.println("State changed from "+m_currentShooterState.toString()+" to "+newState.toString());
+      m_currentShooterState = newState;
     }
 
     //****************************************************************
