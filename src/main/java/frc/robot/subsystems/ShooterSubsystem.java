@@ -5,6 +5,7 @@ import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CommutationConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -13,9 +14,9 @@ import com.ctre.phoenix6.configs.TalonFXSConfiguration;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.hardware.TalonFXS;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.*;
@@ -30,14 +31,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private CANBus    m_shooterBus;
 
     // Shooter motor control support 
-    private VelocityVoltage m_velocityVoltageRequest = new VelocityVoltage(0);
-    private SimpleMotorFeedforward m_leftShooterFF = new SimpleMotorFeedforward(SSC.SHOOTER_KS, 
-                                                                                SSC.SHOOTER_KV,
-                                                                                SSC.SHOOTER_KA);
-    private SimpleMotorFeedforward m_rightShooterFF = new SimpleMotorFeedforward(SSC.SHOOTER_KS, 
-                                                                                 SSC.SHOOTER_KV,
-                                                                                 SSC.SHOOTER_KA);
-
+    private VelocityVoltage m_shooterVelocityVoltageRequest = new VelocityVoltage(0);
+    private VelocityVoltage m_feedVelocityVoltageRequest = new VelocityVoltage(SSC.FEED_MOTOR_TARGET_RPS);
     // --- Shooter state machine enumerated States ---
     private enum ShooterState {
       IDLE,                         // Motors stopped, or placed in coast mode to spin down on their own.
@@ -91,32 +86,18 @@ public class ShooterSubsystem extends SubsystemBase {
     // is released (for competition) or until a different game controller 
     // button, which stops the shooting.
     public void shootContinuous() {
-      // Debug tracer statement:
-      System.out.println("Shoot continuous called. State = "+m_currentShooterState.toString());
-
       // This is the only place m_shooterTriggered is set to true:
       m_shooterTriggered = true;
 
       // See if the shooter wheels are up to speed. If not, start them up.
       if (m_currentShooterState != ShooterState.READY_TO_FIRE) { 
-        changeShooterTargetRps(m_shooterTargetRps);     // CHanges state to ShooterState.GOING_TO_TARGET_RPS
-        changeStateTo(ShooterState.GOING_TO_TARGET_RPS); // So fix that
+        changeShooterTargetRps(m_shooterTargetRps);     // Changes state to ShooterState.GOING_TO_TARGET_RPS
       } else {
-        // The shooter is already up to speed, so startShooting() (which changes the state).
+        // The shooter is already up to speed, so call startShooting() (which changes the state to FIRING_CONTINUOUS).
         startShooting();
       }
     }
 
-    public void startShooting() {
-      // No filters here - only called if shooter is READY_TO_FIRE.
-      // What needs doing here is to turn on the bed roller motor:
-      m_intakeSubsystem.hopper_FeedFuelToShooter();
-      // and the feed motor:
-      startFeedMotor();
-      // and change the state appropriately:
-      changeStateTo(ShooterState.FIRING_CONTINUOUS);
-    }
-    
     // The stopShooting() method stops the feed and hpper bed motors, 
     // but leaves the shooter motors running, just changing state to READY_TO_FIRE. 
     // To stop both feed and shooter motors call shutdownShooter instead (which
@@ -134,10 +115,10 @@ public class ShooterSubsystem extends SubsystemBase {
 
     // The shutdownShooter method not only stops shooting, but also stops
     // all motors, including the shooter flywheels. It is called only from 
-    // a bound button (i.e. there are no timeouts - to stop shooting is a manual
-    // input).
+    // a bound button press (or release). I.e. there are no timeouts - to stop 
+    // shooting is a manual input only.
     public void shutdownShooter() {
-      // No vetting - just shhut everything down immediately
+      // No vetting - just shut everything down immediately
       stopShooting();                     // stop feed and hopper bed mootors, 
                                           // and also clear m_shooterTriggered flag
       m_leftShooter.stopMotor();          // Now stop the shooter motors
@@ -145,7 +126,7 @@ public class ShooterSubsystem extends SubsystemBase {
       changeStateTo(ShooterState.IDLE);   // And change state to IDLE
     }
    
-       // These next two methods facilitate selecting near or far distances
+    // These next two methods facilitate selecting near or far distances
     // from shooter to goal.
     public void spinUpShooterClose() {
         changeShooterTargetRps(SSC.SHOOTER_NEAR_DIST_RPS);
@@ -156,8 +137,8 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     // The folllowing two methods could be useful in tuning - not so much for
-    // competition. Maybe bind to D-Pad buttons, but only during testing - uses too
-    // many button resources... Each call bumps the target setpoint RPS up or down by 100 RPM
+    // competition. Maybe bind to ALT-Dpad buttons
+    // Each call bumps the target setpoint RPS up or down by 1.66 (100 RPM)
     public void incrementShooterVel() {
       changeShooterTargetRps(m_shooterTargetRps + 100.0/60);
     }
@@ -181,27 +162,15 @@ public class ShooterSubsystem extends SubsystemBase {
     // This is the only method where control directives are issued to the 
     // shooter wheel motor controllers.
     private void changeShooterTargetRps(double newRps) {
-      double leftVelFeedforward;
-      double rightVelFeedforward;
       // Filter for reasonable values, and clamp between min and max if needed
-      // Temp debug trace statement:
-      System.out.println("New Target Shooter Rps before clamping: " + newRps);
       if (newRps > SSC.MAX_SHOOTER_RPS) newRps = SSC.MAX_SHOOTER_RPS;
       if (newRps < SSC.MIN_SHOOTER_RPS) newRps = SSC.MIN_SHOOTER_RPS;
-      // Temp debug trace statement:
-      System.out.println("New Target Shooter Velocity after clamping: " + newRps);
       // Store the target velocity in a member variable to enable increment and 
-      // decrement adjustments and retained the adjusted target.
+      // decrement adjustments, if desired, and to retain the adjusted target.
       m_shooterTargetRps = newRps;
 
-      leftVelFeedforward = m_leftShooterFF.calculateWithVelocities(m_rpsLeftShooter, m_shooterTargetRps);
-      rightVelFeedforward = m_rightShooterFF.calculateWithVelocities(m_rpsRightShooter, m_shooterTargetRps);
-      // Temp debug trace statement
-      System.out.println("Calculated Shooter Feedforwards - left: "+leftVelFeedforward+" right: "+rightVelFeedforward);
-      m_leftShooter.setControl(m_velocityVoltageRequest.withVelocity(m_shooterTargetRps)
-                                                       .withFeedForward(leftVelFeedforward));
-      m_rightShooter.setControl(m_velocityVoltageRequest.withVelocity(m_shooterTargetRps)
-                                                        .withFeedForward(rightVelFeedforward));
+      m_leftShooter.setControl(m_shooterVelocityVoltageRequest.withVelocity(m_shooterTargetRps));
+      m_rightShooter.setControl(m_shooterVelocityVoltageRequest.withVelocity(m_shooterTargetRps));
       // Temp debug trace statement:
       System.out.println("Readback Shooter Feedforwards - left: "
                           +m_leftShooter.getClosedLoopFeedForward()
@@ -209,7 +178,21 @@ public class ShooterSubsystem extends SubsystemBase {
                           +m_rightShooter.getClosedLoopFeedForward());
     }
     
-    // areShootersReady chacks both shooters for Rps being within tolerance of 
+    private void startShooting() {
+      // No filters here - only called if shooter is READY_TO_FIRE.
+      // What control is needed here is only to turn on the bed roller
+      // motor and the feed motor:
+      m_intakeSubsystem.hopper_FeedFuelToShooter();
+      startFeedMotor();
+      // and change the state appropriately:
+      changeStateTo(ShooterState.FIRING_CONTINUOUS);
+    }
+    
+    private void startFeedMotor() {
+        m_feeder.setControl(m_feedVelocityVoltageRequest);
+    }
+
+    // areShootersReady checks both shooters for Rps being within tolerance of 
     // the target Rps. Class member variables m_rpsLeftShooter and m_rpsRightShooter
     // are read and stored once per loop by publishShooterData(), so no need to 
     // re-read them again here.
@@ -227,12 +210,7 @@ public class ShooterSubsystem extends SubsystemBase {
         // Inclusive check: lowerBound <= value <= upperBound
         double lowerBound  = m_shooterTargetRps - SSC.SHOOTER_RPS_TOLERANCE;
         double upperBound  = m_shooterTargetRps + SSC.SHOOTER_RPS_TOLERANCE;
-        return (rps >= lowerBound && rps <= upperBound);
-    }
-
-    private void startFeedMotor() {
-        VelocityVoltage request = new VelocityVoltage(SSC.FEED_MOTOR_TARGET_RPS);
-        m_feeder.setControl(request);
+        return (lowerBound <= rps && rps <= upperBound);
     }
 
     // runShooterStateMachine is the engine that makes everything run cleanly
@@ -298,12 +276,10 @@ public class ShooterSubsystem extends SubsystemBase {
         var closedLoopConfig = new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0)
                                                            .withVoltageClosedLoopRampPeriod(SSC.SHOOTER_CLOSED_LOOP_RAMP_PERIOD)
                                                            .withTorqueClosedLoopRampPeriod(0);
-        /*
-        This config isnt needed if just using the rotor sensor
+        // This config allows specifying the gear rations
         var feedbackConfig = new FeedbackConfigs().withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
                                                   .withSensorToMechanismRatio(1)
                                                   .withRotorToSensorRatio(SSC.SHOOTER_GEAR_RATIO);
-       */
         var motorOutputConfig = new MotorOutputConfigs().withNeutralMode(SSC.SHOOTER_NEUTRAL_MODE)
                                                         .withInverted(invertDirection)
                                                         .withPeakForwardDutyCycle(SSC.SHOOTER_OUTPUT_MOTOR_LIMIT)
@@ -322,10 +298,11 @@ public class ShooterSubsystem extends SubsystemBase {
                                                      .withKA(SSC.SHOOTER_KA)
                                                      .withKG(SSC.SHOOTER_KG);
         var flyMotorConfig = new TalonFXConfiguration().withMotorOutput(motorOutputConfig)
-                                                      .withCurrentLimits(currentLimitConfig)
-                                                      .withOpenLoopRamps(openLoopConfig)
-                                                      .withClosedLoopRamps(closedLoopConfig)
-                                                      .withSlot0(pid0Configs);
+                                                       .withFeedback(feedbackConfig)
+                                                       .withCurrentLimits(currentLimitConfig)
+                                                       .withOpenLoopRamps(openLoopConfig)
+                                                       .withClosedLoopRamps(closedLoopConfig)
+                                                       .withSlot0(pid0Configs);
                                                       
         StatusCode status = motor.getConfigurator().apply(flyMotorConfig);
 
@@ -340,12 +317,13 @@ public class ShooterSubsystem extends SubsystemBase {
         ClosedLoopRampsConfigs closedLoopConfig = new ClosedLoopRampsConfigs().withDutyCycleClosedLoopRampPeriod(0)
                                                            .withVoltageClosedLoopRampPeriod(SSC.FEED_CLOSED_LOOP_RAMP_PERIOD)
                                                            .withTorqueClosedLoopRampPeriod(0);
-        /*
-        This config is not needed if just using the rotor sensor
+
+        /* Feedback only avail for external sensor on TalonFXS?
         FeedbackConfigs feedbackConfig = new FeedbackConfigs().withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
                                                   .withSensorToMechanismRatio(SSC.FEED_GEAR_RATIO)
                                                   .withRotorToSensorRatio(1.0);
         */
+
         MotorOutputConfigs motorOutputConfig = new MotorOutputConfigs().withNeutralMode(SSC.FEED_MOTOR_NEUTRAL_MODE)
                                                         .withInverted(invertDirection)
                                                         .withPeakForwardDutyCycle(SSC.FEED_MOTOR_OUTPUT_LIMIT)
@@ -364,11 +342,11 @@ public class ShooterSubsystem extends SubsystemBase {
         CommutationConfigs commutationConfigs = new CommutationConfigs().withAdvancedHallSupport(SSC.FEED_ADVANCED_HALL_SUPPORT_VALUE)
                                                                         .withMotorArrangement(SSC.FEED_MOTOR_ARRANGEMENT_VALUE);
         var feedMotorConfig = new TalonFXSConfiguration().withMotorOutput(motorOutputConfig)
-                                                          .withCurrentLimits(currentLimitConfig)
-                                                          .withOpenLoopRamps(openLoopConfig)
-                                                          .withClosedLoopRamps(closedLoopConfig)
-                                                          .withSlot0(pid0Configs)
-                                                          .withCommutation(commutationConfigs);
+                                                         .withCurrentLimits(currentLimitConfig)
+                                                         .withOpenLoopRamps(openLoopConfig)
+                                                         .withClosedLoopRamps(closedLoopConfig)
+                                                         .withSlot0(pid0Configs)
+                                                         .withCommutation(commutationConfigs);
         StatusCode status = motor.getConfigurator().apply(feedMotorConfig);
         if (! status.isOK()) System.out.println("Feed motor "+motor.getDeviceID()+" config error: "
                                                 +status.getDescription());

@@ -83,12 +83,11 @@ public class Robot extends TimedRobot {
   @Override
   public void disabledPeriodic() {}
 
-  /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
+  /** This autonomous runs the autonomous command selected by your RobotContainer class. */
   @Override
   public void autonomousInit() {
-    //m_autonomousCommand = m_robotContainer.getSelectedAutoCommand();
-    System.out.println("Auto Start Time = "+System.currentTimeMillis()+" ms");
-    // schedule the autonomous command (example)
+    // get and schedule the autonomous command
+    m_autonomousCommand = m_robotContainer.getSelectedAutoCommand();
     if (m_autonomousCommand != null) {
       CommandScheduler.getInstance().schedule(m_autonomousCommand);
     }

@@ -556,10 +556,10 @@ public final class Constants {
        // public static final double SHOOTER_ACCEL = SHOOTER_MAX_RPS/2;
        // public static final double SHOOTER_JERK = 0;
 
-        public static final double MAX_SHOOTER_RPS = 94;
-        public static final double MIN_SHOOTER_RPS = 50;
-        public static final double SHOOTER_NEAR_DIST_RPS = 65;
-        public static final double SHOOTER_FAR_DIST_RPS = 90;
+        public static final double MAX_SHOOTER_RPS = 90;
+        public static final double MIN_SHOOTER_RPS = 20;
+        public static final double SHOOTER_NEAR_DIST_RPS = 50;
+        public static final double SHOOTER_FAR_DIST_RPS = 80;
         public static final double SHOOTER_RPS_TOLERANCE = 3;
 
         public static final int FEED_MOTOR_ID = 23;
@@ -567,7 +567,6 @@ public final class Constants {
         public static final AdvancedHallSupportValue FEED_ADVANCED_HALL_SUPPORT_VALUE = AdvancedHallSupportValue.Enabled;
         public static final MotorArrangementValue FEED_MOTOR_ARRANGEMENT_VALUE = MotorArrangementValue.NEO550_JST;
         public static final double FEED_GEAR_RATIO = 10;
-        public static final double FEED_GEAR_RATIO_INVERTED = 1/FEED_GEAR_RATIO;
 
         public static final double FEED_MOTOR_KP = 1;
         public static final double FEED_MOTOR_KI = 0;
