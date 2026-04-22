@@ -1,8 +1,8 @@
 package frc.robot.subsystems;
 
+import frc.lib.sensors.GyroIO;
 import frc.lib.swerve.MotionEstimator;
 import frc.lib.swerve.SwerveModule;
-import frc.lib.sensors.GyroIO;
 import frc.robot.Constants.*;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
