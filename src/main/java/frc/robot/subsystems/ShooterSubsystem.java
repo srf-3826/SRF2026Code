@@ -82,18 +82,27 @@ public class ShooterSubsystem extends SubsystemBase {
     //****************************************************************
     
     // The ShootContinuous method is bound to a game controller button,
-    // Shooting will continue until eihter the same game controller button 
-    // is released (for competition) or until a different game controller 
-    // button, which stops the shooting.
+    // (Alt-RightBumper for competition, Y for post season). Shooting will 
+    // continue until eihter the same game controller button is released 
+    // (for competition, shooting is "while held") or post season, until 
+    // a different game controller button is pressed (two choices):
+    // ALT-Y to stop shooting but leave flywheels running
+    // X to stop shooting AND shut down the shooter motors.
     public void shootContinuous() {
       // This is the only place m_shooterTriggered is set to true:
       m_shooterTriggered = true;
-
+      // if m_shooterTargetRps has not yet been set (it starts at 0.0) 
+      // then set it to SSC.SHOOTER_NEAR_DIST_RPS
+      if (m_shooterTargetRps == 0.0) {
+        m_shooterTargetRps = SSC.SHOOTER_NEAR_DIST_RPS;
+      }
       // See if the shooter wheels are up to speed. If not, start them up.
       if (m_currentShooterState != ShooterState.READY_TO_FIRE) { 
-        changeShooterTargetRps(m_shooterTargetRps);     // Changes state to ShooterState.GOING_TO_TARGET_RPS
+        // This method changes the state to GOING_TO_TARGET_RPS
+        changeShooterTargetRps(m_shooterTargetRps);
       } else {
-        // The shooter is already up to speed, so call startShooting() (which changes the state to FIRING_CONTINUOUS).
+        // The shooter is already up to speed, so call startShooting()
+        // This method changes the state to FIRING_CONTINUOUS.
         startShooting();
       }
     }
@@ -234,16 +243,18 @@ public class ShooterSubsystem extends SubsystemBase {
 
           case READY_TO_FIRE:
             // Shooters are up to speed. 
-            // If firing is queued up, switch to firing.
-            // Otherwise, just remain in this state until stopped  by manual input. 
-            // While here, check the velocity - if out of TOLERANCE, 
-            // repeat the changeShooterTargetRps request, which 
-            // while not really a change, will generate debug trace 
-            // outputs to alert us to less than ideal control.
             if (m_shooterTriggered) {
+              // Firing is queued up, so switch to shooting.
               startShooting();
             } else if (! areShootersReady()) {
-              // the following method changes state to GOING_TO_TARGET_RPS
+              // Otherwise, just remain in this state READY_TO_FIRE state
+              // until stopped  by manual input, or unless the velocity
+              // gets out of TOLERANCE, in which case repeat the 
+              // changeShooterTargetRps request with the existing tatget.
+              // While not really a change, this will generate debug trace 
+              // outputs (if nothing else, due to state changes) to alert us 
+              // to less than ideal control.
+              // The following method changes state to GOING_TO_TARGET_RPS
               changeShooterTargetRps(m_shooterTargetRps);
             }
             break;
