@@ -161,23 +161,14 @@ public class SwerveModule {
     private void setSpeed(SwerveModuleState desiredState, boolean isOpenLoop) {
         if (isOpenLoop) {
             // Just use duty cycle out
-            m_driveOpenLoop.Output =
-                desiredState.speedMetersPerSecond / SDC.MAX_ROBOT_SPEED_M_PER_SEC;
+            m_driveOpenLoop.Output = desiredState.speedMetersPerSecond / SDC.MAX_ROBOT_SPEED_M_PER_SEC;
             m_driveMotor.setControl(m_driveOpenLoop);
         } else {
-            // Closed loop, so use velocity PID with feed forward to control output
-            // based on m/sec converted to Talon Rotations / sec
-            m_driveClosedLoop.Velocity =
-                desiredState.speedMetersPerSecond * SDC.MPS_TO_TALONFX_RPS_FACTOR;
-
-            // The old FF calculate(vel)) method has been deprecated
-            // use calculateWithVelocities(currentVel, nextVel) instead
-            m_velocityFeedForward =
-                feedforward.calculateWithVelocities(getVelocityMPS(), desiredState.speedMetersPerSecond);
-
-            m_driveMotor.setControl(
-                m_driveClosedLoop.withFeedForward(m_velocityFeedForward)
-            );
+            // Closed loop, so use velocity PID with feed forward (FF specified
+            // via kS, kV, and kA (do not include WPILib feed forward) to control 
+            // output based on desired m/sec converted to Talon Rotations / sec
+            m_driveClosedLoop.Velocity = desiredState.speedMetersPerSecond * SDC.MPS_TO_TALONFX_RPS_FACTOR;
+            m_driveMotor.setControl(m_driveClosedLoop);
         }
     }
 

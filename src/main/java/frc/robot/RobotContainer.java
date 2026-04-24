@@ -13,6 +13,7 @@ import com.ctre.phoenix6.CANBus;
 // import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 // import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 // import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -44,74 +45,82 @@ public class RobotContainer {
     private CANBus allElseCanbus = new CANBus(Constants.CAN_BUS_FOR_EVERYTHING_ELSE);
 
     // Declare subsystem object handles
-
     private GyroIO                 m_gyroIO;
     private SwerveSubsystem        m_swerveSubsystem;
     private IntakeSubsystem        m_intakeSubsystem;
     private ShooterSubsystem       m_shooterSubsystem;
-    //private RetractIntakeCmd       m_RetractIntakeCmd;
-    //private RetractIntakeToMaximumCmd  m_RetractIntakeToMaximumCmd;
-    //private Trajectory             m_Trajectory;
-    //private DoNothingCmd m_DoNothingCmd;
-    //private MidfieldFullDefenseAuto m_MidfieldFullDefenseAuto;
-    //private LeftMidfieldDefenseAuto m_LeftMidfieldDefenseAuto; 
-    //private RightMidfieldDefenseAuto m_RightMidfieldDefenseAuto; 
-    //private ShootPreload m_ShootPreload;
-    //private ShootPreloadThenLMD m_ShootPreloadThenLMD;
-    //private ShootPreloadThenRMD m_ShootPreloadThenRMD;
+    //private ClimbSubsystem         m_climbSubsystem;
+    //private VisionSubsystem        m_visionSubsystem;
+    //private PoseEstimatorSubsystem m_poseEstimatorSubsystem;
 
-    SendableChooser<Command> m_autoRoutineChooser = new SendableChooser<>();
-    //private DeployIntakeCmd        m_DeployIntakeCmd;;
-    //private EjectIntakeCmd         m_EjectIntakeCmd;
-    // private VisionSubsystem     m_visionSubsystem;
-    // private LimelightResults    limelight;
-    // private Supplier<Pose2d>    m_robotPoseSupplier = ()-> m_swerveSubsystem.getPose();
-    // private ClimbSubsystem      m_climbSubsystem;
+    // Declare commands needed for Teleop and Auto
+    //private DeployIntakeCmd             m_DeployIntakeCmd;;
+    //private RetractIntakeCmd            m_RetractIntakeCmd;
+    //private RetractIntakeToMaximumCmd   m_RetractIntakeToMaximumCmd;
+    //private EjectIntakeCmd              m_EjectIntakeCmd;
+    private SwerveParkCmd               m_parkCmd;
 
-    // Declare choosable autonomous Commands and any other Commands used with ButtonBindings
-    private SwerveParkCmd       m_parkCmd;
+    private DoNothingCmd                m_DoNothingCmd;
+    //private MidfieldFullDefenseAuto     m_MidfieldFullDefenseAuto;
+    //private LeftMidfieldDefenseAuto     m_LeftMidfieldDefenseAuto; 
+    //private RightMidfieldDefenseAuto    m_RightMidfieldDefenseAuto; 
+    //private ShootPreload                m_ShootPreload;
+    //private ShootPreloadThenLMD         m_ShootPreloadThenLMD;
+    //private ShootPreloadThenRMD         m_ShootPreloadThenRMD;
+ 
+    // Decleare vision and odometry / trajectory following components
+    //private LimelightResults            limelight;
+    //private Supplier<Pose2d>            m_robotPoseSupplier = ()-> m_swerveSubsystem.getPose();
+    //private Trajectory                  m_Trajectory;
 
-    // Create sendable choosers for starting position and desired Auto routine
-    // private static SendableChooser<Command> m_autoRoutineChooser = new SendableChooser<>();
+    // Create sendable chooser for desired Auto routine
+    private static SendableChooser<Command> m_autoRoutineChooser = new SendableChooser<>();
 
     // Declare CommandXboxController
     private static CommandXboxController m_xbox;
 
     //  Constructor for the robot container. Contains subsystems, OI devices, and commands.
     public RobotContainer() {
-        m_xbox = new CommandXboxController(0);
-        m_gyroIO = new GyroIO(GC.PIGEON_2_CANID, GC.INVERT_GYRO, swerveCanbus);
-        m_swerveSubsystem = new SwerveSubsystem(m_gyroIO, swerveCanbus);
-        m_intakeSubsystem = new IntakeSubsystem(allElseCanbus);
+        m_xbox =             new CommandXboxController(0);
+        m_gyroIO =           new GyroIO(GC.PIGEON_2_CANID, GC.INVERT_GYRO, swerveCanbus);
+        m_swerveSubsystem =  new SwerveSubsystem(m_gyroIO, swerveCanbus);
+        m_intakeSubsystem =  new IntakeSubsystem(allElseCanbus);
         m_shooterSubsystem = new ShooterSubsystem(allElseCanbus, m_intakeSubsystem);
+        //m_poseEstimatorSubsystem = new PoseEstimatorSubsystem(limelight, m_swerveSubsystem);
+        //m_visionSubsystem = new VisionSubsystem(limelight, m_swerveSubsystem);
+        //m_climbSubsystem = new ClimbSubsystem();
 
+        // Create commands used for teleop
         //m_RetractIntakeCmd = new RetractIntakeCmd(m_intakeSubsystem);
-       // m_DeployIntakeCmd = new DeployIntakeCmd(m_intakeSubsystem);
+        //m_DeployIntakeCmd = new DeployIntakeCmd(m_intakeSubsystem);
         //m_RetractIntakeToMaximumCmd = new RetractIntakeToMaximumCmd(m_intakeSubsystem);
         //m_EjectIntakeCmd = new EjectIntakeCmd(m_intakeSubsystem);
+        // Park Cmd exits on any joystick input, so need to pass it all joystick input lambdas
+        m_parkCmd = new SwerveParkCmd(m_swerveSubsystem,
+                                () -> -m_xbox.getLeftY(),
+                                () -> -m_xbox.getLeftX(),
+                                () -> -m_xbox.getRightX());
 
-        //m_DoNothingCmd = new DoNothingCmd();
-    //  m_MidfieldFullDefenseAuto = new MidfieldFullDefenseAuto();
-    //  m_LeftMidfieldDefenseAuto = new LeftMidFieldDefenseAuto();
-    //  m_RightMidfieldDefenseAuto = new RighttMidFieldDefenseAuto();
-       // m_ShootPreload = new ShootPreload(m_swerveSubsystem, m_shooterSubsystem, m_Trajectory);
-    //  m_ShootPreloadThenLMD = new ShootPreloadThenLMD();
-    //  m_ShootPreloadThenRMD = new ShootPreloadThenRMD();
+        // Create commands used for Auto
+        m_DoNothingCmd =     new DoNothingCmd();
+        //m_MidfieldFullDefenseAuto = new MidfieldFullDefenseAuto();
+        //m_LeftMidfieldDefenseAuto = new LeftMidFieldDefenseAuto();
+        //m_RightMidfieldDefenseAuto = new RighttMidFieldDefenseAuto();
+        //m_ShootPreload = new ShootPreload(m_swerveSubsystem, m_shooterSubsystem, m_Trajectory);
+        //m_ShootPreloadThenLMD = new ShootPreloadThenLMD();
+        //m_ShootPreloadThenRMD = new ShootPreloadThenRMD();
 
-        //m_autoRoutineChooser.setDefaultOption("Do Nothing", m_DoNothingCmd);
+        // Populate autoRoutineChooser and post it to Dashboard
+        m_autoRoutineChooser.setDefaultOption("Do Nothing", m_DoNothingCmd);
         //m_autoRoutineChooser.addOption("Mid Full Defense", m_MidfieldFullDefenseAuto); //MFD
         //m_autoRoutineChooser.addOption("Left Mid Defense",m_LeftMidfieldDefenseAuto); //LMD
         //m_autoRoutineChooser.addOption("Right Mid Defense", m_RightMidfieldDefenseAuto); //RMD
         //m_autoRoutineChooser.addOption("Shoot Preload", m_ShootPreload);
         //m_autoRoutineChooser.addOption("Shoot Then MD", m_ShootPreloadThenLMD);
         //m_autoRoutineChooser.addOption("Shoot Then RMD", m_ShootPreloadThenRMD);
-        //SmartDashboard.putData(m_autoRoutineChooser);
+        SmartDashboard.putData(m_autoRoutineChooser);
         
-
-        // m_poseEstimatorSubsystem = new PoseEstimatorSubsystem(limelight, m_swerveSubsystem);
-        // m_visionSubsystem = new VisionSubsystem(limelight, m_swerveSubsystem);
-        // m_climbSubsystem = new ClimbSubsystem();
-
+        // Create subsystem default commands 
         m_swerveSubsystem.setDefaultCommand(
                 new DefaultDriveCmd(m_swerveSubsystem,
                                     // Xbox stick forward and stick to left are both neg, 
@@ -119,16 +128,7 @@ public class RobotContainer {
                                     () -> -m_xbox.getLeftY(),    // Y = translate: +fore / -back
                                     () -> -m_xbox.getLeftX(),    // X = strafe: +left / -right
                                     () -> -m_xbox.getRightX())); // rotate: +CCW / -CW
-
-        // Park Cmd exits on any joystick input, so need to pass it all joystick input lambdas
-        m_parkCmd = new SwerveParkCmd(m_swerveSubsystem,
-                                () -> -m_xbox.getLeftY(),
-                                () -> -m_xbox.getLeftX(),
-                                () -> -m_xbox.getRightX());
-/*
-        m_autoRoutineChooser.setDefaultOption("Default Name", m_defaultAutoCmd);
-        SmartDashboard.putData("Autonomous Selection:", m_autoRoutineChooser);
-    */
+        // Define and implement Drive Team UI
         configureButtonBindings();
     }
     
@@ -258,8 +258,6 @@ public class RobotContainer {
      * getSelectedAutoCommand is called from Robot.AutonomousInit(),
      */
     public Command getSelectedAutoCommand() {
-        // return m_autoRoutineChooser.getSelected();
-        // post competition, ensure no Auto is run
-        return null;
+        return m_autoRoutineChooser.getSelected();
     }
 }
