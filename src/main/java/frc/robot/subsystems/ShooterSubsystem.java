@@ -67,14 +67,6 @@ public class ShooterSubsystem extends SubsystemBase {
                                             // state change tracking.
     }
     
-    // Always use this method to change the state. This can then serve as a 
-    // single gateway to do state change tracking, and logging in the future.
-    private void changeStateTo(ShooterState newState) {
-      // Temp debug trace statement:
-      System.out.println("State changed from "+m_currentShooterState.toString()+" to "+newState.toString());
-      m_currentShooterState = newState;
-    }
-
     //****************************************************************
     //
     // Public methods providing UI Control of the ShooterSubsystem
@@ -162,14 +154,21 @@ public class ShooterSubsystem extends SubsystemBase {
     //
     //============================================================
 
-    // This method is called when it is deisred to either start up 
-    // the shooter wheels (passing in either a new or the last active 
-    // m_shooterTargetRps), or to change the target velocity (in rps) 
-    // of shooter wheels that are already running. For example, to change
-    // between a near or far shot, or to incrment or 
-    // decrement the current shooter velocity for tuning purposes.
-    // This is the only method where control directives are issued to the 
-    // shooter wheel motor controllers.
+    // Always use the changeStateTo method to change the state. This can then serve as a 
+    // single gateway to do state change tracking, and logging in the future.
+    private void changeStateTo(ShooterState newState) {
+      // Temp debug trace statement:
+      System.out.println("State changed from "+m_currentShooterState.toString()+" to "+newState.toString());
+      m_currentShooterState = newState;
+    }
+
+    // Always use the changeShooterTargerRps method to either start up 
+    // the shooter wheels or to change the target velocity (in rps) 
+    // of shooter wheels that are already running, (passing in the desired 
+    //target Rps (which may be the last active m_shooterTargetRps). 
+    // By adhering to thiss rule, this method becomes the only place where 
+    // control directives are issued to the shooter wheel motor controllers, 
+    // making it easier to debug motor control problems.
     private void changeShooterTargetRps(double newRps) {
       // Filter for reasonable values, and clamp between min and max if needed
       if (newRps > SSC.MAX_SHOOTER_RPS) newRps = SSC.MAX_SHOOTER_RPS;

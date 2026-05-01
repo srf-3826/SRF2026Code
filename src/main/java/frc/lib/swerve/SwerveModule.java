@@ -2,7 +2,6 @@ package frc.lib.swerve;
 
 import frc.lib.sensors.Phoenix6SignalAdapters;
 import frc.robot.Constants.*;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -54,14 +53,10 @@ public class SwerveModule {
     private final Phoenix6SignalAdapters.AngleSignal m_absWheelPosSignal;
 
     private double m_lastAngleDeg;
-    private double m_velocityFeedForward;
 
     private final DutyCycleOut m_driveOpenLoop = new DutyCycleOut(0.0).withUpdateFreqHz(0);
     private final VelocityVoltage m_driveClosedLoop = new VelocityVoltage(0.0);
     private final PositionVoltage m_steerClosedLoop = new PositionVoltage(0.0);
-
-    private final SimpleMotorFeedforward feedforward =
-        new SimpleMotorFeedforward(SDC.DRIVE_KS, SDC.DRIVE_KV, SDC.DRIVE_KA);
 
     // Shuffleboard entries
     private GenericEntry steerSetpointDegEntry;
