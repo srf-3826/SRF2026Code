@@ -541,13 +541,13 @@ public final class Constants {
         public static final double  SHOOTER_STATOR_CURRENT_LIMIT = 70;
         public static final boolean SHOOTER_ENABLE_STATOR_CURRENT_LIMIT = true;
 
-        public static final double SHOOTER_KP = 1;
-        public static final double SHOOTER_KI = 0;
-        public static final double SHOOTER_KD = 0;
-        public static final double SHOOTER_KS = 0;
-        public static final double SHOOTER_KV = 1.0;
+        public static final double SHOOTER_KP = 0.1;
+        public static final double SHOOTER_KI = 0.0;
+        public static final double SHOOTER_KD = 0.0;
+        public static final double SHOOTER_KS = 0.0;
+        public static final double SHOOTER_KV = 0.125;
         public static final double SHOOTER_KA = 0.0;
-        public static final double SHOOTER_KG = 0;
+        public static final double SHOOTER_KG = 0.0;
 
         // Duty cycle output limit, +/-
         public static final double SHOOTER_OUTPUT_MOTOR_LIMIT = 1.0;
@@ -558,7 +558,7 @@ public final class Constants {
 
         public static final double MAX_SHOOTER_RPS = 90;
         public static final double MIN_SHOOTER_RPS = 20;
-        public static final double SHOOTER_NEAR_DIST_RPS = 50;
+        public static final double SHOOTER_NEAR_DIST_RPS = 42;
         public static final double SHOOTER_FAR_DIST_RPS = 80;
         public static final double SHOOTER_RPS_TOLERANCE = 3;
 
