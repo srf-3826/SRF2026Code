@@ -558,7 +558,7 @@ public final class Constants {
 
         public static final double MAX_SHOOTER_RPS = 90;
         public static final double MIN_SHOOTER_RPS = 20;
-        public static final double SHOOTER_NEAR_DIST_RPS = 42;
+        public static final double SHOOTER_NEAR_DIST_RPS = 65;      // For parade continuous recycled fuel shooting
         public static final double SHOOTER_FAR_DIST_RPS = 80;
         public static final double SHOOTER_RPS_TOLERANCE = 3;
 

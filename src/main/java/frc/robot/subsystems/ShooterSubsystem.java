@@ -46,10 +46,13 @@ public class ShooterSubsystem extends SubsystemBase {
     private ShooterState  m_currentShooterState = ShooterState.IDLE;    // Start in IDLE state
     private boolean       m_shooterTriggered = false;                   // Set when shooter is triggered to start
                                                                         // cleared when shooter is manually stopped
-    private double        m_shooterTargetRps = SSC.SHOOTER_FAR_DIST_RPS;  // Start with target rps 0, i.e. motor stopped
+    private double        m_shooterTargetRps = 0.0;                     // Start with target rps 0, i.e. motor stopped
     private double        count = 0.0;                                  // Temp variable used to reduce 
                                                                         // debug trace statement output frequency
-                                                                        // while shooter is spinning up.
+                                                                        // while shooter is spinning up, and also 
+                                                                        // "timeout" if target Rps not reached
+                                                                        // within 2 seconds (100 loop times 
+                                                                        // @ 50 loops/sec).
     // This is the constructor for a ShooterSubsystem
     // Inputs are the CANBus to use, and a handle to the IntakeSubsystem
     // so thet the bed rollers can be syncronized with the ShooterSubsystem.
@@ -84,7 +87,8 @@ public class ShooterSubsystem extends SubsystemBase {
       // This is the only place m_shooterTriggered is set to true:
       m_shooterTriggered = true;
       // if m_shooterTargetRps has not yet been set (it starts at 0.0) 
-      // then set it to SSC.SHOOTER_NEAR_DIST_RPS
+      // then set it to SSC.SHOOTER_NEAR_DIST_RPS (this is ideal parade shooting
+      // distance for continuously recycled fuel balls.)
       if (m_shooterTargetRps == 0.0) {
         m_shooterTargetRps = SSC.SHOOTER_NEAR_DIST_RPS;
       }
@@ -179,6 +183,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
       m_leftShooter.setControl(m_shooterVelocityVoltageRequest.withVelocity(m_shooterTargetRps));
       m_rightShooter.setControl(m_shooterVelocityVoltageRequest.withVelocity(m_shooterTargetRps));
+      changeStateTo(ShooterState.GOING_TO_TARGET_RPS);
       // Temp debug trace statement:
       System.out.println("Readback Shooter Feedforwards - left: "
                           +m_leftShooter.getClosedLoopFeedForward()
@@ -232,11 +237,18 @@ public class ShooterSubsystem extends SubsystemBase {
           case GOING_TO_TARGET_RPS:
             if (areShootersReady()) {
               changeStateTo(ShooterState.READY_TO_FIRE);
+              count = 0.0;
             } else if (count++ % 10.0 < .001) {     // Decrease debug trace output frequency by 10
               // Temp debug trace statement
               System.out.println("Shooter not ready. Target rps = "+m_shooterTargetRps+
                                  " Curr Left rps = "+m_rpsLeftShooter+
                                  " Curr Right rps = "+m_rpsRightShooter);
+              // Don't wait forwever. If not ready after 2 seconds, just go with
+              // whatever speed is currently happening.
+              if (count > 100 ) {
+                changeStateTo(ShooterState.READY_TO_FIRE);
+                count = 0.0;
+              }
             }
             break;
 
@@ -247,13 +259,11 @@ public class ShooterSubsystem extends SubsystemBase {
               startShooting();
             } else if (! areShootersReady()) {
               // Otherwise, just remain in this state READY_TO_FIRE state
-              // until stopped  by manual input, or unless the velocity
-              // gets out of TOLERANCE, in which case repeat the 
-              // changeShooterTargetRps request with the existing tatget.
-              // While not really a change, this will generate debug trace 
+              // unless the velocity gets out of TOLERANCE, in which case 
+              // repeat the changeShooterTargetRps request with the existing 
+              // tatget. This will generate debug trace 
               // outputs (if nothing else, due to state changes) to alert us 
               // to less than ideal control.
-              // The following method changes state to GOING_TO_TARGET_RPS
               changeShooterTargetRps(m_shooterTargetRps);
             }
             break;
@@ -373,5 +383,6 @@ public class ShooterSubsystem extends SubsystemBase {
       var m_currentRight = m_rightShooter.getSupplyCurrent().getValueAsDouble();
       SmartDashboard.putNumber("Left Current", m_currentLeft);
       SmartDashboard.putNumber("Right Current", m_currentRight);
+      SmartDashboard.putNumber("Feed Motor Temp", m_feeder.getExternalMotorTemp().getValueAsDouble());
     }
 }
